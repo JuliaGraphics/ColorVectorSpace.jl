@@ -53,10 +53,10 @@ multype(a::Type,b::Type) = typeof(one(a)*one(b))
 sumtype(a::Type,b::Type) = typeof(one(a)+one(b))
 divtype(a::Type,b::Type) = typeof(one(a)/one(b))
 powtype(a::Type,b::Type) = typeof(one(a)^one(b))
-multype(a::Paint, b::Paint) = multype(typeof(a),typeof(b))
-sumtype(a::Paint, b::Paint) = sumtype(typeof(a),typeof(b))
-divtype(a::Paint, b::Paint) = divtype(typeof(a),typeof(b))
-powtype(a::Paint, b::Paint) = powtype(typeof(a),typeof(b))
+multype(a::Paint, b::Paint) = multype(eltype(a),eltype(b))
+sumtype(a::Paint, b::Paint) = sumtype(eltype(a),eltype(b))
+divtype(a::Paint, b::Paint) = divtype(eltype(a),eltype(b))
+powtype(a::Paint, b::Paint) = powtype(eltype(a),eltype(b))
 
 # Scalar binary RGB operations require the same RGB type for each element,
 # otherwise we don't know which to return
@@ -88,6 +88,10 @@ function (/){T<:Ufixed}(c::AbstractRGB{T}, f::Real)
     fs = (one(f)/reinterpret(one(T)))/f
     basecolortype(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
+function (/){T<:Ufixed}(c::AbstractRGB{T}, f::Integer)
+    fs = (1/reinterpret(one(T)))/f
+    basecolortype(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
+end
 (+){S,T}(a::AbstractRGB{S}, b::AbstractRGB{T}) = color_rettype(a, b){sumtype(S,T)}(red(a)+red(b), green(a)+green(b), blue(a)+blue(b))
 (-){S,T}(a::AbstractRGB{S}, b::AbstractRGB{T}) = color_rettype(a, b){sumtype(S,T)}(red(a)-red(b), green(a)-green(b), blue(a)-blue(b))
 (+)(a::TransparentRGB, b::TransparentRGB) =
@@ -102,8 +106,8 @@ end
 (.*)(c::TransparentRGB, f::Real) = (*)(f, c)
 (/)(c::AbstractRGB, f::Real) = (one(f)/f)*c
 (/)(c::TransparentRGB, f::Real) = (one(f)/f)*c
-# (/)(c::AbstractRGB, f::Integer) = (one(eltype(c))/f)*c
-# (/)(c::TransparentRGB, f::Integer) = (one(eltype(c))/f)*c
+(/)(c::AbstractRGB, f::Integer) = (one(eltype(c))/f)*c
+(/)(c::TransparentRGB, f::Integer) = (one(eltype(c))/f)*c
 (./)(c::AbstractRGB, f::Real) = (/)(c, f)
 (./)(c::TransparentRGB, f::Real) = (/)(c, f)
 
@@ -118,6 +122,8 @@ isinf{T<:FloatingPoint}(c::AbstractRGB{T}) = isinf(red(c)) || isinf(green(c)) ||
 isinf(c::TransparentRGBFloat) = isinf(red(c)) || isinf(green(c)) || isinf(blue(c)) || isinf(alpha(c))
 abs(c::AbstractRGB) = abs(red(c))+abs(green(c))+abs(blue(c)) # should this have a different name?
 abs{T<:Ufixed}(c::AbstractRGB{T}) = float32(red(c))+float32(green(c))+float32(blue(c)) # should this have a different name?
+abs(c::TransparentRGB) = abs(red(c))+abs(green(c))+abs(blue(c))+abs(alpha(c)) # should this have a different name?
+abs{T<:Ufixed}(c::TransparentRGB{T}) = float32(red(c))+float32(green(c))+float32(blue(c))+float32(alpha(c)) # should this have a different name?
 sumsq(c::AbstractRGB) = red(c)^2+green(c)^2+blue(c)^2
 sumsq{T<:Ufixed}(c::AbstractRGB{T}) = float32(red(c))^2+float32(green(c))^2+float32(blue(c))^2
 
@@ -218,6 +224,7 @@ hypot(x::Gray, y::Gray) = hypot(convert(Real, x), convert(Real, y))
 isless(c::AbstractGray, r::Real) = gray(c) < r
 isless(r::Real, c::AbstractGray) = r < gray(c)
 (<)(a::AbstractGray, b::AbstractGray) = gray(a) < gray(b)
+Base.isapprox(x::AbstractGray, y::AbstractGray; kwargs...) = isapprox(gray(x), gray(y); kwargs...)
 
 zero{P<:TransparentGray}(::Type{P}) = P(0,0)
  one{P<:TransparentGray}(::Type{P}) = P(1,1)
@@ -229,12 +236,14 @@ zero{P<:TransparentGray}(::Type{P}) = P(0,0)
 (-){CV<:AbstractGray}(b::AbstractGray, A::AbstractArray{CV}) = (.-)(b, A)
 (*){T<:Number}(A::AbstractArray{T}, b::AbstractGray) = A.*b
 (*){T<:Number}(b::AbstractGray, A::AbstractArray{T}) = A.*b
+(/){C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray) = A./b
 (.+){C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray) = plus(A, b)
 (.+){C<:AbstractGray}(b::AbstractGray, A::AbstractArray{C}) = plus(b, A)
 (.-){C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray) = minus(A, b)
 (.-){C<:AbstractGray}(b::AbstractGray, A::AbstractArray{C}) = minus(b, A)
 (.*){T<:Number}(A::AbstractArray{T}, b::AbstractGray) = mul(A, b)
 (.*){T<:Number}(b::AbstractGray, A::AbstractArray{T}) = mul(b, A)
+(./){C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray) = divd(A, b)
 if VERSION < v"0.4.0-dev+6354"
     function (.^){C<:AbstractGray}(A::StridedArray{C}, b::Real)
         Cnew = basecolortype(C){powtype(eltype(C),typeof(b))}
@@ -282,6 +291,11 @@ function mul{T<:Number}(A::AbstractArray{T}, b::Paint)
     mul!(out, A, b)
 end
 mul{T<:Number}(b::Paint, A::AbstractArray{T}) = mul(A, b)
+function divd{P<:AbstractGray}(A::AbstractArray{P}, b::AbstractGray)
+    bT = typeof(one(P)/b)
+    out = similar(A, bT)
+    div!(out, A, b)
+end
 
 @ngenerate N typeof(out) function plus!{T,N}(out, A::AbstractArray{T,N}, b)
     @inbounds begin
@@ -330,7 +344,7 @@ if VERSION < v"0.4.0-dev+6354"
     promote_array_type{T<:Real,C<:MathTypes}(::Type{T}, ::Type{C}) = basepainttype(C){promote_type(T, eltype(C))}
 #     promote_rule{C<:MathTypes,S<:Integer}(::Type{C}, ::Type{S}) = basepainttype(C){promote_type(eltype(C), S)} # for Array{RGB}./Array{Int}
 else
-    promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = basecolortype(C){Base.promote_array_type(F, T, eltype(C))}
+    promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = basepainttype(C){Base.promote_array_type(F, T, eltype(C))}
 end
 promote_rule{P1<:Paint,P2<:Paint}(::Type{P1}, ::Type{P2}) = color_rettype(P1,P2){promote_type(eltype(P1), eltype(P2))}
 promote_rule{T<:Real,C<:AbstractGray}(::Type{T}, ::Type{C}) = promote_type(T, eltype(C))

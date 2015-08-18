@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/JuliaGraphics/ColorVectorSpace.jl.svg?branch=master)](https://travis-ci.org/JuliaGraphics/ColorVectorSpace.jl)
 
-This package is an add-on to [ColorTypes](), and provides fast
+This package is an add-on to [ColorTypes](https://github.com/JuliaGraphics/ColorTypes.jl), and provides fast
 mathematical operations for objects with types such as `RGB` and
 `Gray`.
 

@@ -16,6 +16,16 @@ However, particularly in image processing it is common to ignore this
 concern, and for the sake of performance treat an RGB as if it were a
 3-vector.  This package provides such operations.
 
+If you're curious about how much difference it makes, the following
+diagram might help. The first 10 `distinguishable_colors` were
+generated, and all pairs were averaged. Each box represents the
+average of the pair of diagonal elements intersected by tracing
+vertically and horizontally; within each box, the upper diagonal is
+the "colorimetrically-correct" version, while the lower diagonal
+represents the "RGB vector space" version.
+
+![ColorVectorSpace](images/comparison.png "Comparison")
+
 ## Usage
 
 ```jl

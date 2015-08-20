@@ -1,6 +1,7 @@
 # ColorVectorSpace
 
 [![Build Status](https://travis-ci.org/JuliaGraphics/ColorVectorSpace.jl.svg?branch=master)](https://travis-ci.org/JuliaGraphics/ColorVectorSpace.jl)
+[![codecov.io](http://codecov.io/github/JuliaGraphics/ColorVectorSpace.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaGraphics/ColorVectorSpace.jl?branch=master)
 
 This package is an add-on to [ColorTypes](https://github.com/JuliaGraphics/ColorTypes.jl), and provides fast
 mathematical operations for objects with types such as `RGB` and

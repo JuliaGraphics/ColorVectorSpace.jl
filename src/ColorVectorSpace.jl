@@ -10,12 +10,13 @@ import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     trunc, floor, round, ceil, bswap,
     mod, rem, atan2, hypot
 
-typealias TransparentRGB{C<:AbstractRGB,T}   Transparent{C,T,4}
-typealias TransparentGray{C<:AbstractGray,T} Transparent{C,T,2}
-typealias TransparentRGBFloat{C<:AbstractRGB,T<:FloatingPoint} Transparent{C,T,4}
-typealias TransparentGrayFloat{C<:AbstractGray,T<:FloatingPoint} Transparent{C,T,2}
-typealias TransparentRGBUfixed{C<:AbstractRGB,T<:FloatingPoint} Transparent{C,T,4}
-typealias TransparentGrayUfixed{C<:AbstractGray,T<:FloatingPoint} Transparent{C,T,2}
+typealias AbstractGray{T} OpaqueColor{T,1}
+typealias TransparentRGB{C<:AbstractRGB,T}   TransparentColor{C,T,4}
+typealias TransparentGray{C<:AbstractGray,T} TransparentColor{C,T,2}
+typealias TransparentRGBFloat{C<:AbstractRGB,T<:FloatingPoint} TransparentColor{C,T,4}
+typealias TransparentGrayFloat{C<:AbstractGray,T<:FloatingPoint} TransparentColor{C,T,2}
+typealias TransparentRGBUfixed{C<:AbstractRGB,T<:Ufixed} TransparentColor{C,T,4}
+typealias TransparentGrayUfixed{C<:AbstractGray,T<:Ufixed} TransparentColor{C,T,2}
 
 typealias MathTypes Union(AbstractRGB,TransparentRGB,AbstractGray,TransparentRGB)
 
@@ -55,21 +56,21 @@ multype(a::Type,b::Type) = typeof(one(a)*one(b))
 sumtype(a::Type,b::Type) = typeof(one(a)+one(b))
 divtype(a::Type,b::Type) = typeof(one(a)/one(b))
 powtype(a::Type,b::Type) = typeof(one(a)^one(b))
-multype(a::Paint, b::Paint) = multype(eltype(a),eltype(b))
-sumtype(a::Paint, b::Paint) = sumtype(eltype(a),eltype(b))
-divtype(a::Paint, b::Paint) = divtype(eltype(a),eltype(b))
-powtype(a::Paint, b::Paint) = powtype(eltype(a),eltype(b))
+multype(a::Color, b::Color) = multype(eltype(a),eltype(b))
+sumtype(a::Color, b::Color) = sumtype(eltype(a),eltype(b))
+divtype(a::Color, b::Color) = divtype(eltype(a),eltype(b))
+powtype(a::Color, b::Color) = powtype(eltype(a),eltype(b))
 
 # Scalar binary RGB operations require the same RGB type for each element,
 # otherwise we don't know which to return
 color_rettype{A<:AbstractRGB,B<:AbstractRGB}(::Type{A}, ::Type{B}) = _color_rettype(basecolortype(A), basecolortype(B))
 color_rettype{A<:AbstractGray,B<:AbstractGray}(::Type{A}, ::Type{B}) = _color_rettype(basecolortype(A), basecolortype(B))
-color_rettype{A<:TransparentRGB,B<:TransparentRGB}(::Type{A}, ::Type{B}) = _color_rettype(basepainttype(A), basepainttype(B))
-color_rettype{A<:TransparentGray,B<:TransparentGray}(::Type{A}, ::Type{B}) = _color_rettype(basepainttype(A), basepainttype(B))
-_color_rettype{A<:Paint,B<:Paint}(::Type{A}, ::Type{B}) = error("binary operation with $A and $B, return type is ambiguous")
-_color_rettype{C<:Paint}(::Type{C}, ::Type{C}) = C
+color_rettype{A<:TransparentRGB,B<:TransparentRGB}(::Type{A}, ::Type{B}) = _color_rettype(basecolortype(A), basecolortype(B))
+color_rettype{A<:TransparentGray,B<:TransparentGray}(::Type{A}, ::Type{B}) = _color_rettype(basecolortype(A), basecolortype(B))
+_color_rettype{A<:Color,B<:Color}(::Type{A}, ::Type{B}) = error("binary operation with $A and $B, return type is ambiguous")
+_color_rettype{C<:Color}(::Type{C}, ::Type{C}) = C
 
-color_rettype(c1::Paint, c2::Paint) = color_rettype(typeof(c1), typeof(c2))
+color_rettype(c1::Color, c2::Color) = color_rettype(typeof(c1), typeof(c2))
 
 ## Math on Colors. These implementations encourage inlining and,
 ## for the case of Ufixed types, nearly halve the number of multiplications (for RGB)
@@ -77,7 +78,7 @@ color_rettype(c1::Paint, c2::Paint) = color_rettype(typeof(c1), typeof(c2))
 # Scalar RGB
 copy(c::AbstractRGB) = c
 (*)(f::Real, c::AbstractRGB) = basecolortype(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c))
-(*)(f::Real, c::TransparentRGB) = basepainttype(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c), f*alpha(c))
+(*)(f::Real, c::TransparentRGB) = basecolortype(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c), f*alpha(c))
 function (*){T<:Ufixed}(f::Real, c::AbstractRGB{T})
     fs = f*(1/reinterpret(one(T)))
     basecolortype(c){multype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
@@ -113,13 +114,13 @@ end
 (./)(c::AbstractRGB, f::Real) = (/)(c, f)
 (./)(c::TransparentRGB, f::Real) = (/)(c, f)
 
-isfinite{T<:Ufixed}(c::Paint{T}) = true
+isfinite{T<:Ufixed}(c::Color{T}) = true
 isfinite{T<:FloatingPoint}(c::AbstractRGB{T}) = isfinite(red(c)) && isfinite(green(c)) && isfinite(blue(c))
 isfinite(c::TransparentRGBFloat) = isfinite(red(c)) && isfinite(green(c)) && isfinite(blue(c)) && isfinite(alpha(c))
-isnan{T<:Ufixed}(c::Paint{T}) = false
+isnan{T<:Ufixed}(c::Color{T}) = false
 isnan{T<:FloatingPoint}(c::AbstractRGB{T}) = isnan(red(c)) || isnan(green(c)) || isnan(blue(c))
 isnan(c::TransparentRGBFloat) = isnan(red(c)) || isnan(green(c)) || isnan(blue(c)) || isnan(alpha(c))
-isinf{T<:Ufixed}(c::Paint{T}) = false
+isinf{T<:Ufixed}(c::Color{T}) = false
 isinf{T<:FloatingPoint}(c::AbstractRGB{T}) = isinf(red(c)) || isinf(green(c)) || isinf(blue(c))
 isinf(c::TransparentRGBFloat) = isinf(red(c)) || isinf(green(c)) || isinf(blue(c)) || isinf(alpha(c))
 abs(c::AbstractRGB) = abs(red(c))+abs(green(c))+abs(blue(c)) # should this have a different name?
@@ -130,11 +131,11 @@ sumsq(c::AbstractRGB) = red(c)^2+green(c)^2+blue(c)^2
 sumsq{T<:Ufixed}(c::AbstractRGB{T}) = float32(red(c))^2+float32(green(c))^2+float32(blue(c))^2
 
 one{C<:AbstractRGB}(::Type{C})     = C(1,1,1)
-one{P<:TransparentRGB}(::Type{P})  = P(1,1,1,1)
+one{C<:TransparentRGB}(::Type{C})  = C(1,1,1,1)
 zero{C<:AbstractRGB}(::Type{C})    = C(0,0,0)
-zero{P<:TransparentRGB}(::Type{P}) = P(0,0,0,0)
-one(p::Paint) = one(typeof(p))
-zero(p::Paint) = zero(typeof(p))
+zero{C<:TransparentRGB}(::Type{C}) = C(0,0,0,0)
+one(p::Color) = one(typeof(p))
+zero(p::Color) = zero(typeof(p))
 typemin{C<:AbstractRGB}(::Type{C}) = zero(C)
 typemax{C<:AbstractRGB}(::Type{C}) = one(C)
 
@@ -168,7 +169,7 @@ typemax{C<:AbstractRGB}(::Type{C}) = one(C)
 # Scalar Gray
 copy(c::AbstractGray) = c
 (*)(f::Real, c::AbstractGray) = basecolortype(c){multype(typeof(f),eltype(c))}(f*gray(c))
-(*)(f::Real, c::TransparentGray) = basepainttype(c){multype(typeof(f),eltype(c))}(f*gray(c), f*alpha(c))
+(*)(f::Real, c::TransparentGray) = basecolortype(c){multype(typeof(f),eltype(c))}(f*gray(c), f*alpha(c))
 (*)(c::AbstractGray, f::Real) = (*)(f, c)
 (.*)(f::Real, c::AbstractGray) = (*)(f, c)
 (.*)(c::AbstractGray, f::Real) = (*)(f, c)
@@ -228,8 +229,8 @@ isless(r::Real, c::AbstractGray) = r < gray(c)
 (<)(a::AbstractGray, b::AbstractGray) = gray(a) < gray(b)
 Base.isapprox(x::AbstractGray, y::AbstractGray; kwargs...) = isapprox(gray(x), gray(y); kwargs...)
 
-zero{P<:TransparentGray}(::Type{P}) = P(0,0)
- one{P<:TransparentGray}(::Type{P}) = P(1,1)
+zero{C<:TransparentGray}(::Type{C}) = C(0,0)
+ one{C<:TransparentGray}(::Type{C}) = C(1,1)
 
  # Arrays
 (+){CV<:AbstractGray}(A::AbstractArray{CV}, b::AbstractGray) = (.+)(A, b)
@@ -271,34 +272,35 @@ end
 (.*){T<:Number}(b::TransparentGray, A::AbstractArray{T}) = mul(b, A)
 
 # Called plus/minus instead of plus/sub because `sub` already has a meaning!
-function plus(A::AbstractArray, b::Paint)
+function plus(A::AbstractArray, b::Color)
     bT = convert(eltype(A), b)
     out = similar(A)
     plus!(out, A, bT)
 end
-plus(b::Paint, A::AbstractArray) = plus(A, b)
-function minus(A::AbstractArray, b::Paint)
+plus(b::Color, A::AbstractArray) = plus(A, b)
+function minus(A::AbstractArray, b::Color)
     bT = convert(eltype(A), b)
     out = similar(A)
     minus!(out, A, bT)
 end
-function minus(b::Paint, A::AbstractArray)
+function minus(b::Color, A::AbstractArray)
     bT = convert(eltype(A), b)
     out = similar(A)
     minus!(out, bT, A)
 end
-function mul{T<:Number}(A::AbstractArray{T}, b::Paint)
+function mul{T<:Number}(A::AbstractArray{T}, b::Color)
     bT = typeof(b*one(T))
     out = similar(A, bT)
     mul!(out, A, b)
 end
-mul{T<:Number}(b::Paint, A::AbstractArray{T}) = mul(A, b)
-function divd{P<:AbstractGray}(A::AbstractArray{P}, b::AbstractGray)
-    bT = typeof(one(P)/b)
+mul{T<:Number}(b::Color, A::AbstractArray{T}) = mul(A, b)
+function divd{C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray)
+    bT = typeof(one(C)/b)
     out = similar(A, bT)
     div!(out, A, b)
 end
 
+# TODO: use iterators when we can rely on Julia 0.4
 @ngenerate N typeof(out) function plus!{T,N}(out, A::AbstractArray{T,N}, b)
     @inbounds begin
         @nloops N i A begin
@@ -308,7 +310,7 @@ end
     out
 end
 # need a separate minus! because of unsigned types
-@ngenerate N typeof(out) function minus!{T,N}(out, A::AbstractArray{T,N}, b::Paint)  # TODO: change to b::T when julia #8045 fixed
+@ngenerate N typeof(out) function minus!{T,N}(out, A::AbstractArray{T,N}, b::Color)  # TODO: change to b::T when julia #8045 fixed
     @inbounds begin
         @nloops N i A begin
             @nref(N, out, i) = @nref(N, A, i) - b
@@ -316,7 +318,7 @@ end
     end
     out
 end
-@ngenerate N typeof(out) function minus!{T,N}(out, b::Paint, A::AbstractArray{T,N})
+@ngenerate N typeof(out) function minus!{T,N}(out, b::Color, A::AbstractArray{T,N})
     @inbounds begin
         @nloops N i A begin
             @nref(N, out, i) = b - @nref(N, A, i)
@@ -343,12 +345,12 @@ end
 
 # To help type inference
 if VERSION < v"0.4.0-dev+6354"
-    promote_array_type{T<:Real,C<:MathTypes}(::Type{T}, ::Type{C}) = basepainttype(C){promote_type(T, eltype(C))}
-#     promote_rule{C<:MathTypes,S<:Integer}(::Type{C}, ::Type{S}) = basepainttype(C){promote_type(eltype(C), S)} # for Array{RGB}./Array{Int}
+    promote_array_type{T<:Real,C<:MathTypes}(::Type{T}, ::Type{C}) = basecolortype(C){promote_type(T, eltype(C))}
+#     promote_rule{C<:MathTypes,S<:Integer}(::Type{C}, ::Type{S}) = basecolortype(C){promote_type(eltype(C), S)} # for Array{RGB}./Array{Int}
 else
-    promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = basepainttype(C){Base.promote_array_type(F, T, eltype(C))}
+    promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = basecolortype(C){Base.promote_array_type(F, T, eltype(C))}
 end
-promote_rule{P1<:Paint,P2<:Paint}(::Type{P1}, ::Type{P2}) = color_rettype(P1,P2){promote_type(eltype(P1), eltype(P2))}
+promote_rule{C1<:Color,C2<:Color}(::Type{C1}, ::Type{C2}) = color_rettype(C1,C2){promote_type(eltype(C1), eltype(C2))}
 promote_rule{T<:Real,C<:AbstractGray}(::Type{T}, ::Type{C}) = promote_type(T, eltype(C))
 
 end

@@ -1,6 +1,7 @@
 # ColorVectorSpace
 
 [![Build Status](https://travis-ci.org/JuliaGraphics/ColorVectorSpace.jl.svg?branch=master)](https://travis-ci.org/JuliaGraphics/ColorVectorSpace.jl)
+[![codecov.io](http://codecov.io/github/JuliaGraphics/ColorVectorSpace.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaGraphics/ColorVectorSpace.jl?branch=master)
 
 This package is an add-on to [ColorTypes](https://github.com/JuliaGraphics/ColorTypes.jl), and provides fast
 mathematical operations for objects with types such as `RGB` and
@@ -33,8 +34,9 @@ using ColorTypes, ColorVectorSpace
 ```
 
 That's it. Just by loading `ColorVectorSpace`, most basic mathematical
-operations will "just work" on `AbstractRGB`, `AbstractGray`,
-`TransparentRGB`, and `TransparentGray` objects.
+operations will "just work" on `AbstractRGB`, `AbstractGray`
+(`OpaqueColor{T,1}`), `TransparentRGB`, and `TransparentGray` objects.
+(See `typealias` definitions for the latter inside of `ColorTypes`).
 
 If you discover missing operations, please open an issue, or better
 yet submit a pull request.

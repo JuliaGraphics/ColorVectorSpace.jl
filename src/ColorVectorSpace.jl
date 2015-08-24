@@ -63,10 +63,10 @@ powtype(a::Colorant, b::Colorant) = powtype(eltype(a),eltype(b))
 
 # Scalar binary RGB operations require the same RGB type for each element,
 # otherwise we don't know which to return
-color_rettype{A<:AbstractRGB,B<:AbstractRGB}(::Type{A}, ::Type{B}) = _color_rettype(basecolortype(A), basecolortype(B))
-color_rettype{A<:AbstractGray,B<:AbstractGray}(::Type{A}, ::Type{B}) = _color_rettype(basecolortype(A), basecolortype(B))
-color_rettype{A<:TransparentRGB,B<:TransparentRGB}(::Type{A}, ::Type{B}) = _color_rettype(basecolortype(A), basecolortype(B))
-color_rettype{A<:TransparentGray,B<:TransparentGray}(::Type{A}, ::Type{B}) = _color_rettype(basecolortype(A), basecolortype(B))
+color_rettype{A<:AbstractRGB,B<:AbstractRGB}(::Type{A}, ::Type{B}) = _color_rettype(base_colorant_type(A), base_colorant_type(B))
+color_rettype{A<:AbstractGray,B<:AbstractGray}(::Type{A}, ::Type{B}) = _color_rettype(base_colorant_type(A), base_colorant_type(B))
+color_rettype{A<:TransparentRGB,B<:TransparentRGB}(::Type{A}, ::Type{B}) = _color_rettype(base_colorant_type(A), base_colorant_type(B))
+color_rettype{A<:TransparentGray,B<:TransparentGray}(::Type{A}, ::Type{B}) = _color_rettype(base_colorant_type(A), base_colorant_type(B))
 _color_rettype{A<:Colorant,B<:Colorant}(::Type{A}, ::Type{B}) = error("binary operation with $A and $B, return type is ambiguous")
 _color_rettype{C<:Colorant}(::Type{C}, ::Type{C}) = C
 
@@ -77,23 +77,23 @@ color_rettype(c1::Colorant, c2::Colorant) = color_rettype(typeof(c1), typeof(c2)
 
 # Scalar RGB
 copy(c::AbstractRGB) = c
-(*)(f::Real, c::AbstractRGB) = basecolortype(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c))
-(*)(f::Real, c::TransparentRGB) = basecolortype(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c), f*alpha(c))
+(*)(f::Real, c::AbstractRGB) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c))
+(*)(f::Real, c::TransparentRGB) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c), f*alpha(c))
 function (*){T<:Ufixed}(f::Real, c::AbstractRGB{T})
     fs = f*(1/reinterpret(one(T)))
-    basecolortype(c){multype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
+    base_colorant_type(c){multype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
 function (*){T<:Ufixed}(f::Ufixed, c::AbstractRGB{T})
     fs = reinterpret(f)*(1/widen(reinterpret(one(T)))^2)
-    basecolortype(c){multype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
+    base_colorant_type(c){multype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
 function (/){T<:Ufixed}(c::AbstractRGB{T}, f::Real)
     fs = (one(f)/reinterpret(one(T)))/f
-    basecolortype(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
+    base_colorant_type(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
 function (/){T<:Ufixed}(c::AbstractRGB{T}, f::Integer)
     fs = (1/reinterpret(one(T)))/f
-    basecolortype(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
+    base_colorant_type(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
 (+){S,T}(a::AbstractRGB{S}, b::AbstractRGB{T}) = color_rettype(a, b){sumtype(S,T)}(red(a)+red(b), green(a)+green(b), blue(a)+blue(b))
 (-){S,T}(a::AbstractRGB{S}, b::AbstractRGB{T}) = color_rettype(a, b){sumtype(S,T)}(red(a)-red(b), green(a)-green(b), blue(a)-blue(b))
@@ -168,8 +168,8 @@ typemax{C<:AbstractRGB}(::Type{C}) = one(C)
 
 # Scalar Gray
 copy(c::AbstractGray) = c
-(*)(f::Real, c::AbstractGray) = basecolortype(c){multype(typeof(f),eltype(c))}(f*gray(c))
-(*)(f::Real, c::TransparentGray) = basecolortype(c){multype(typeof(f),eltype(c))}(f*gray(c), f*alpha(c))
+(*)(f::Real, c::AbstractGray) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c))
+(*)(f::Real, c::TransparentGray) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c), f*alpha(c))
 (*)(c::AbstractGray, f::Real) = (*)(f, c)
 (.*)(f::Real, c::AbstractGray) = (*)(f, c)
 (.*)(c::AbstractGray, f::Real) = (*)(f, c)
@@ -187,8 +187,8 @@ copy(c::AbstractGray) = c
 (-){S,T}(a::AbstractGray{S}, b::AbstractGray{T}) = color_rettype(a,b){sumtype(S,T)}(gray(a)-gray(b))
 (-)(a::TransparentGray, b::TransparentGray) = color_rettype(a,b){sumtype(eltype(a),eltype(b))}(gray(a)-gray(b),alpha(a)-alpha(b))
 (*){S,T}(a::AbstractGray{S}, b::AbstractGray{T}) = color_rettype(a,b){multype(S,T)}(gray(a)*gray(b))
-(^){S}(a::AbstractGray{S}, b::Integer) = basecolortype(a){powtype(S,Int)}(gray(a)^convert(Int,b))
-(^){S}(a::AbstractGray{S}, b::Real) = basecolortype(a){powtype(S,typeof(b))}(gray(a)^b)
+(^){S}(a::AbstractGray{S}, b::Integer) = base_colorant_type(a){powtype(S,Int)}(gray(a)^convert(Int,b))
+(^){S}(a::AbstractGray{S}, b::Real) = base_colorant_type(a){powtype(S,typeof(b))}(gray(a)^b)
 (+)(c::AbstractGray) = c
 (+)(c::TransparentGray) = c
 (-)(c::AbstractGray) = typeof(c)(-gray(c))
@@ -249,7 +249,7 @@ zero{C<:TransparentGray}(::Type{C}) = C(0,0)
 (./){C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray) = divd(A, b)
 if VERSION < v"0.4.0-dev+6354"
     function (.^){C<:AbstractGray}(A::StridedArray{C}, b::Real)
-        Cnew = basecolortype(C){powtype(eltype(C),typeof(b))}
+        Cnew = base_colorant_type(C){powtype(eltype(C),typeof(b))}
         out = similar(A, Cnew)
         for (i,a) in enumerate(A)
             out[i] = a^b
@@ -345,10 +345,10 @@ end
 
 # To help type inference
 if VERSION < v"0.4.0-dev+6354"
-    promote_array_type{T<:Real,C<:MathTypes}(::Type{T}, ::Type{C}) = basecolortype(C){promote_type(T, eltype(C))}
-#     promote_rule{C<:MathTypes,S<:Integer}(::Type{C}, ::Type{S}) = basecolortype(C){promote_type(eltype(C), S)} # for Array{RGB}./Array{Int}
+    promote_array_type{T<:Real,C<:MathTypes}(::Type{T}, ::Type{C}) = base_colorant_type(C){promote_type(T, eltype(C))}
+#     promote_rule{C<:MathTypes,S<:Integer}(::Type{C}, ::Type{S}) = base_colorant_type(C){promote_type(eltype(C), S)} # for Array{RGB}./Array{Int}
 else
-    promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = basecolortype(C){Base.promote_array_type(F, T, eltype(C))}
+    promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = base_colorant_type(C){Base.promote_array_type(F, T, eltype(C))}
 end
 promote_rule{C1<:Colorant,C2<:Colorant}(::Type{C1}, ::Type{C2}) = color_rettype(C1,C2){promote_type(eltype(C1), eltype(C2))}
 promote_rule{T<:Real,C<:AbstractGray}(::Type{T}, ::Type{C}) = promote_type(T, eltype(C))

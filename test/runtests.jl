@@ -9,7 +9,7 @@ end
 FactCheck.roughly(x::Gray) = (y::Gray) -> isapprox(y, x)
 
 facts("Colortypes") do
-    function test_colortype_approx_eq(a::Color, b::Color, astr, bstr)
+    function test_colortype_approx_eq(a::Colorant, b::Colorant, astr, bstr)
         @fact typeof(a) --> typeof(b)
         n = length(fieldnames(typeof(a)))
         for i = 1:n

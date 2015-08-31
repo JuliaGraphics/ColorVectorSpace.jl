@@ -51,6 +51,9 @@ for f in (:mod, :rem, :mod1)
     @eval $f(x::Gray, m::Gray) = Gray($f(gray(x), gray(m)))
 end
 
+# Real values are treated like grays
+ColorTypes.gray(x::Real) = x
+
 # Return types for arithmetic operations
 multype(a::Type,b::Type) = typeof(one(a)*one(b))
 sumtype(a::Type,b::Type) = typeof(one(a)+one(b))

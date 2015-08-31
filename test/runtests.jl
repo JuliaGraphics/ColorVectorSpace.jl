@@ -70,6 +70,8 @@ facts("Colortypes") do
         @fact (acf/Gray{Float32}(2))[1] --> roughly(0.05f0)
         @fact (acu/2)[1] --> Gray(gray(acu[1])/2)
         @fact (acf/2)[1] --> roughly(Gray{Float32}(0.05f0))
+
+        @fact gray(0.8) --> 0.8
     end
 
     context("Arithmetic with GrayA") do

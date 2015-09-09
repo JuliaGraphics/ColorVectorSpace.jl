@@ -74,6 +74,19 @@ facts("Colortypes") do
         @fact gray(0.8) --> 0.8
     end
 
+    context("Comparisons with Gray") do
+        g1 = Gray{U8}(0.2)
+        g2 = Gray{U8}(0.3)
+        @fact isless(g1, g2) --> true
+        @fact isless(g2, g1) --> false
+        @fact g1 < g2 --> true
+        @fact g2 < g1 --> false
+        @fact isless(g1, 0.5) --> true
+        @fact isless(0.5, g1) --> false
+        @fact g1 < 0.5 --> true
+        @fact 0.5 < g1 --> false
+    end
+
     context("Arithmetic with GrayA") do
         p1 = GrayA{Float32}(Gray(0.8), 0.2)
         p2 = GrayA{Float32}(Gray(0.6), 0.3)

@@ -225,10 +225,12 @@ sumsq(c::TransparentGrayUfixed) = float32(gray(c))^2 + float32(alpha(c))^2
 atan2(x::Gray, y::Gray) = atan2(convert(Real, x), convert(Real, y))
 hypot(x::Gray, y::Gray) = hypot(convert(Real, x), convert(Real, y))
 
+(<)(g1::AbstractGray, g2::AbstractGray) = gray(g1) < gray(g2)
 (<)(c::AbstractGray, r::Real) = gray(c) < r
 (<)(r::Real, c::AbstractGray) = r < gray(c)
-isless(c::AbstractGray, r::Real) = gray(c) < r
-isless(r::Real, c::AbstractGray) = r < gray(c)
+isless(g1::AbstractGray, g2::AbstractGray) = isless(gray(g1), gray(g2))
+isless(c::AbstractGray, r::Real) = isless(gray(c), r)
+isless(r::Real, c::AbstractGray) = isless(r, gray(c))
 (<)(a::AbstractGray, b::AbstractGray) = gray(a) < gray(b)
 Base.isapprox(x::AbstractGray, y::AbstractGray; kwargs...) = isapprox(gray(x), gray(y); kwargs...)
 

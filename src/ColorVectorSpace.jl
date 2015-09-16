@@ -13,8 +13,8 @@ import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
 typealias AbstractGray{T} Color{T,1}
 typealias TransparentRGB{C<:AbstractRGB,T}   TransparentColor{C,T,4}
 typealias TransparentGray{C<:AbstractGray,T} TransparentColor{C,T,2}
-typealias TransparentRGBFloat{C<:AbstractRGB,T<:FloatingPoint} TransparentColor{C,T,4}
-typealias TransparentGrayFloat{C<:AbstractGray,T<:FloatingPoint} TransparentColor{C,T,2}
+typealias TransparentRGBFloat{C<:AbstractRGB,T<:AbstractFloat} TransparentColor{C,T,4}
+typealias TransparentGrayFloat{C<:AbstractGray,T<:AbstractFloat} TransparentColor{C,T,2}
 typealias TransparentRGBUfixed{C<:AbstractRGB,T<:Ufixed} TransparentColor{C,T,4}
 typealias TransparentGrayUfixed{C<:AbstractGray,T<:Ufixed} TransparentColor{C,T,2}
 
@@ -118,13 +118,13 @@ end
 (./)(c::TransparentRGB, f::Real) = (/)(c, f)
 
 isfinite{T<:Ufixed}(c::Colorant{T}) = true
-isfinite{T<:FloatingPoint}(c::AbstractRGB{T}) = isfinite(red(c)) && isfinite(green(c)) && isfinite(blue(c))
+isfinite{T<:AbstractFloat}(c::AbstractRGB{T}) = isfinite(red(c)) && isfinite(green(c)) && isfinite(blue(c))
 isfinite(c::TransparentRGBFloat) = isfinite(red(c)) && isfinite(green(c)) && isfinite(blue(c)) && isfinite(alpha(c))
 isnan{T<:Ufixed}(c::Colorant{T}) = false
-isnan{T<:FloatingPoint}(c::AbstractRGB{T}) = isnan(red(c)) || isnan(green(c)) || isnan(blue(c))
+isnan{T<:AbstractFloat}(c::AbstractRGB{T}) = isnan(red(c)) || isnan(green(c)) || isnan(blue(c))
 isnan(c::TransparentRGBFloat) = isnan(red(c)) || isnan(green(c)) || isnan(blue(c)) || isnan(alpha(c))
 isinf{T<:Ufixed}(c::Colorant{T}) = false
-isinf{T<:FloatingPoint}(c::AbstractRGB{T}) = isinf(red(c)) || isinf(green(c)) || isinf(blue(c))
+isinf{T<:AbstractFloat}(c::AbstractRGB{T}) = isinf(red(c)) || isinf(green(c)) || isinf(blue(c))
 isinf(c::TransparentRGBFloat) = isinf(red(c)) || isinf(green(c)) || isinf(blue(c)) || isinf(alpha(c))
 abs(c::AbstractRGB) = abs(red(c))+abs(green(c))+abs(blue(c)) # should this have a different name?
 abs{T<:Ufixed}(c::AbstractRGB{T}) = float32(red(c))+float32(green(c))+float32(blue(c)) # should this have a different name?
@@ -207,11 +207,11 @@ div(a::AbstractGray, b::AbstractGray) = div(gray(a), gray(b))
 (.+)(a::Number, b::AbstractGray) = a+gray(b)
 (.-)(a::Number, b::AbstractGray) = a-gray(b)
 
-isfinite{T<:FloatingPoint}(c::AbstractGray{T}) = isfinite(gray(c))
+isfinite{T<:AbstractFloat}(c::AbstractGray{T}) = isfinite(gray(c))
 isfinite(c::TransparentGrayFloat) = isfinite(gray(c)) && isfinite(alpha(c))
-isnan{T<:FloatingPoint}(c::AbstractGray{T}) = isnan(gray(c))
+isnan{T<:AbstractFloat}(c::AbstractGray{T}) = isnan(gray(c))
 isnan(c::TransparentGrayFloat) = isnan(gray(c)) && isnan(alpha(c))
-isinf{T<:FloatingPoint}(c::AbstractGray{T}) = isinf(gray(c))
+isinf{T<:AbstractFloat}(c::AbstractGray{T}) = isinf(gray(c))
 isinf(c::TransparentGrayFloat) = isinf(gray(c)) && isnan(alpha(c))
 abs(c::AbstractGray) = abs(gray(c)) # should this have a different name?
 abs(c::TransparentGray) = abs(gray(c))+abs(alpha(c)) # should this have a different name?

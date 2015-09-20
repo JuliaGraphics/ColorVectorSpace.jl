@@ -18,7 +18,7 @@ typealias TransparentGrayFloat{C<:AbstractGray,T<:AbstractFloat} TransparentColo
 typealias TransparentRGBUfixed{C<:AbstractRGB,T<:Ufixed} TransparentColor{C,T,4}
 typealias TransparentGrayUfixed{C<:AbstractGray,T<:Ufixed} TransparentColor{C,T,2}
 
-typealias MathTypes Union(AbstractRGB,TransparentRGB,AbstractGray,TransparentRGB)
+@compat typealias MathTypes Union{AbstractRGB,TransparentRGB,AbstractGray,TransparentRGB}
 
 export sumsq
 

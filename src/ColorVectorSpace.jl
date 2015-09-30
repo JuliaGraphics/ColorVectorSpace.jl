@@ -4,11 +4,28 @@ module ColorVectorSpace
 
 using ColorTypes, FixedPointNumbers, Compat, Base.Cartesian
 
-import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, <
+import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
-    isnan, isless, length, one, promote_array_type, promote_rule, zero,
+    isnan, isless, length, norm, one, promote_array_type, promote_rule, zero,
     trunc, floor, round, ceil, bswap,
     mod, rem, atan2, hypot
+
+# The unaryOps
+import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
+                  asin, acos, atan, asinh, acosh, atanh,
+                  sec, csc, cot, asec, acsc, acot,
+                  sech, csch, coth, asech, acsch, acoth,
+                  sinc, cosc, cosd, cotd, cscd, secd,
+                  sind, tand, acosd, acotd, acscd, asecd,
+                  asind, atand, rad2deg, deg2rad,
+                  log, log2, log10, log1p, exponent, exp,
+                  exp2, expm1, cbrt, sqrt, erf,
+                  erfc, erfcx, erfi, dawson,
+                  significand, lgamma,
+                  gamma, lfact, frexp, modf, airy, airyai,
+                  airyprime, airyaiprime, airybi, airybiprime,
+                  besselj0, besselj1, bessely0, bessely1,
+                  eta, zeta, digamma
 
 typealias AbstractGray{T} Color{T,1}
 typealias TransparentRGB{C<:AbstractRGB,T}   TransparentColor{C,T,4}
@@ -171,6 +188,26 @@ typemax{C<:AbstractRGB}(::Type{C}) = one(C)
 
 # Scalar Gray
 copy(c::AbstractGray) = c
+const unaryOps = (:-, :~, :conj, :abs,
+                  :sin, :cos, :tan, :sinh, :cosh, :tanh,
+                  :asin, :acos, :atan, :asinh, :acosh, :atanh,
+                  :sec, :csc, :cot, :asec, :acsc, :acot,
+                  :sech, :csch, :coth, :asech, :acsch, :acoth,
+                  :sinc, :cosc, :cosd, :cotd, :cscd, :secd,
+                  :sind, :tand, :acosd, :acotd, :acscd, :asecd,
+                  :asind, :atand, :rad2deg, :deg2rad,
+                  :log, :log2, :log10, :log1p, :exponent, :exp,
+                  :exp2, :expm1, :cbrt, :sqrt, :erf,
+                  :erfc, :erfcx, :erfi, :dawson,
+                  :significand, :lgamma,
+                  :gamma, :lfact, :frexp, :modf, :airy, :airyai,
+                  :airyprime, :airyaiprime, :airybi, :airybiprime,
+                  :besselj0, :besselj1, :bessely0, :bessely1,
+                  :eta, :zeta, :digamma)
+for op in unaryOps
+    @eval ($op)(c::AbstractGray) = $op(gray(c))
+end
+
 (*)(f::Real, c::AbstractGray) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c))
 (*)(f::Real, c::TransparentGray) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c), f*alpha(c))
 (*)(c::AbstractGray, f::Real) = (*)(f, c)
@@ -180,10 +217,12 @@ copy(c::AbstractGray) = c
 (.*)(f::Real, c::TransparentGray) = (*)(f, c)
 (.*)(c::TransparentGray, f::Real) = (*)(f, c)
 (/)(c::AbstractGray, f::Real) = (one(f)/f)*c
+(/)(n::Number, c::AbstractGray) = n/gray(c)
 (/)(c::TransparentGray, f::Real) = (one(f)/f)*c
 (/)(c::AbstractGray, f::Integer) = (one(eltype(c))/f)*c
 (/)(c::TransparentGray, f::Integer) = (one(eltype(c))/f)*c
 (./)(c::AbstractGray, f::Real) = c/f
+(./)(n::Number, c::AbstractGray) = n/gray(c)
 (./)(c::TransparentGray, f::Real) = c/f
 (+){S,T}(a::AbstractGray{S}, b::AbstractGray{T}) = color_rettype(a,b){sumtype(S,T)}(gray(a)+gray(b))
 (+)(a::TransparentGray, b::TransparentGray) = color_rettype(a,b){sumtype(eltype(a),eltype(b))}(gray(a)+gray(b),alpha(a)+alpha(b))
@@ -213,9 +252,8 @@ isnan{T<:AbstractFloat}(c::AbstractGray{T}) = isnan(gray(c))
 isnan(c::TransparentGrayFloat) = isnan(gray(c)) && isnan(alpha(c))
 isinf{T<:AbstractFloat}(c::AbstractGray{T}) = isinf(gray(c))
 isinf(c::TransparentGrayFloat) = isinf(gray(c)) && isnan(alpha(c))
-abs(c::AbstractGray) = abs(gray(c)) # should this have a different name?
+norm(c::AbstractGray) = abs(gray(c))
 abs(c::TransparentGray) = abs(gray(c))+abs(alpha(c)) # should this have a different name?
-abs{T<:Ufixed}(c::AbstractGray{T}) = float32(gray(c)) # should this have a different name?
 abs(c::TransparentGrayUfixed) = float32(gray(c)) + float32(alpha(c)) # should this have a different name?
 sumsq(x::Real) = x^2
 sumsq(c::AbstractGray) = gray(c)^2

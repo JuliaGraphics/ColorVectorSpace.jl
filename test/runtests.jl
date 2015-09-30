@@ -87,6 +87,20 @@ facts("Colortypes") do
         @fact 0.5 < g1 --> false
     end
 
+    context("Unary operations with Gray") do
+        for g in (Gray(0.4), Gray{U8}(0.4))
+            for op in ColorVectorSpace.unaryOps
+                try
+                    v = @eval $op(gray(g))  # if this fails, don't bother
+                    @fact $op(g) --> v
+                end
+            end
+        end
+        u = U8(0.4)
+        @fact ~Gray(u) --> Gray(~u)
+        @fact -Gray(u) --> Gray(-u)
+    end
+
     context("Arithmetic with GrayA") do
         p1 = GrayA{Float32}(Gray(0.8), 0.2)
         p2 = GrayA{Float32}(Gray(0.6), 0.3)

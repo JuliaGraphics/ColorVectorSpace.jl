@@ -28,6 +28,8 @@ facts("Colortypes") do
         @test_colortype_approx_eq cf^2 Gray{Float32}(0.01)
         @test_colortype_approx_eq cf^3.0f0 Gray{Float32}(0.001)
         @fact eltype(2.0*cf) --> Float64
+        @fact abs2(ccmp) --> 0.2f0^2
+        @fact sumabs2(ccmp) --> 0.2f0^2
         cu = Gray{U8}(0.1)
         @fact 2*cu --> Gray(2*cu.val)
         @fact 2.0f0*cu --> Gray(2.0f0*cu.val)
@@ -70,6 +72,7 @@ facts("Colortypes") do
         @fact (acf/Gray{Float32}(2))[1] --> roughly(0.05f0)
         @fact (acu/2)[1] --> Gray(gray(acu[1])/2)
         @fact (acf/2)[1] --> roughly(Gray{Float32}(0.05f0))
+        @fact sumabs2([cf,ccmp]) --> roughly(0.05f0)
 
         @fact gray(0.8) --> 0.8
     end
@@ -156,6 +159,7 @@ facts("Colortypes") do
         @fact RGB(1, Inf, 0.5) --> isinf
         @fact RGB(1, Inf, 0.5) --> not(isnan)
         @fact abs(RGB(0.1,0.2,0.3)) --> roughly(0.6)
+        @fact sumabs2(RGB(0.1,0.2,0.3)) --> roughly(0.14)
 
         acu = RGB{U8}[cu]
         acf = RGB{Float32}[cf]

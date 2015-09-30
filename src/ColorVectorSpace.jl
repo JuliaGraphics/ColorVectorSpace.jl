@@ -6,7 +6,7 @@ using ColorTypes, FixedPointNumbers, Compat, Base.Cartesian
 
 import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
-    isnan, isless, length, norm, one, promote_array_type, promote_rule, zero,
+    isnan, isless, length, mapreduce, norm, one, promote_array_type, promote_rule, zero,
     trunc, floor, round, ceil, bswap,
     mod, rem, atan2, hypot, max, min
 
@@ -37,9 +37,14 @@ typealias TransparentGrayUfixed{C<:AbstractGray,T<:Ufixed} TransparentColor{C,T,
 
 @compat typealias MathTypes Union{AbstractRGB,TransparentRGB,AbstractGray,TransparentRGB}
 
-export sumsq
-
 ## Generic algorithms
+if VERSION >= v"0.4-"
+    mapreduce(f, op::Base.ShortCircuiting, a::MathTypes) = f(a)  # ambiguity
+    mapreduce(f, op, a::MathTypes) = f(a)
+else
+    mapreduce(f, op, a::MathTypes) = Base.evaluate(f, a)
+end
+
 for f in (:trunc, :floor, :round, :ceil, :eps, :bswap)
     @eval $f{T}(g::Gray{T}) = Gray{T}($f(gray(g)))
     @eval @vectorize_1arg Gray $f
@@ -144,11 +149,11 @@ isinf{T<:Ufixed}(c::Colorant{T}) = false
 isinf{T<:AbstractFloat}(c::AbstractRGB{T}) = isinf(red(c)) || isinf(green(c)) || isinf(blue(c))
 isinf(c::TransparentRGBFloat) = isinf(red(c)) || isinf(green(c)) || isinf(blue(c)) || isinf(alpha(c))
 abs(c::AbstractRGB) = abs(red(c))+abs(green(c))+abs(blue(c)) # should this have a different name?
-abs{T<:Ufixed}(c::AbstractRGB{T}) = float32(red(c))+float32(green(c))+float32(blue(c)) # should this have a different name?
+abs{T<:Ufixed}(c::AbstractRGB{T}) = Float32(red(c))+Float32(green(c))+Float32(blue(c)) # should this have a different name?
 abs(c::TransparentRGB) = abs(red(c))+abs(green(c))+abs(blue(c))+abs(alpha(c)) # should this have a different name?
-abs{T<:Ufixed}(c::TransparentRGB{T}) = float32(red(c))+float32(green(c))+float32(blue(c))+float32(alpha(c)) # should this have a different name?
-sumsq(c::AbstractRGB) = red(c)^2+green(c)^2+blue(c)^2
-sumsq{T<:Ufixed}(c::AbstractRGB{T}) = float32(red(c))^2+float32(green(c))^2+float32(blue(c))^2
+abs{T<:Ufixed}(c::TransparentRGB{T}) = Float32(red(c))+Float32(green(c))+Float32(blue(c))+Float32(alpha(c)) # should this have a different name?
+abs2(c::AbstractRGB) = red(c)^2+green(c)^2+blue(c)^2
+abs2{T<:Ufixed}(c::AbstractRGB{T}) = Float32(red(c))^2+Float32(green(c))^2+Float32(blue(c))^2
 
 one{C<:AbstractRGB}(::Type{C})     = C(1,1,1)
 one{C<:TransparentRGB}(::Type{C})  = C(1,1,1,1)
@@ -262,12 +267,11 @@ isinf{T<:AbstractFloat}(c::AbstractGray{T}) = isinf(gray(c))
 isinf(c::TransparentGrayFloat) = isinf(gray(c)) && isnan(alpha(c))
 norm(c::AbstractGray) = abs(gray(c))
 abs(c::TransparentGray) = abs(gray(c))+abs(alpha(c)) # should this have a different name?
-abs(c::TransparentGrayUfixed) = float32(gray(c)) + float32(alpha(c)) # should this have a different name?
-sumsq(x::Real) = x^2
-sumsq(c::AbstractGray) = gray(c)^2
-sumsq{T<:Ufixed}(c::AbstractGray{T}) = float32(gray(c))^2
-sumsq(c::TransparentGray) = gray(c)^2+alpha(c)^2
-sumsq(c::TransparentGrayUfixed) = float32(gray(c))^2 + float32(alpha(c))^2
+abs(c::TransparentGrayUfixed) = Float32(gray(c)) + Float32(alpha(c)) # should this have a different name?
+abs2(c::AbstractGray) = gray(c)^2
+abs2{T<:Ufixed}(c::AbstractGray{T}) = Float32(gray(c))^2
+abs2(c::TransparentGray) = gray(c)^2+alpha(c)^2
+abs2(c::TransparentGrayUfixed) = Float32(gray(c))^2 + Float32(alpha(c))^2
 atan2(x::Gray, y::Gray) = atan2(convert(Real, x), convert(Real, y))
 hypot(x::Gray, y::Gray) = hypot(convert(Real, x), convert(Real, y))
 
@@ -403,5 +407,7 @@ else
 end
 promote_rule{C1<:Colorant,C2<:Colorant}(::Type{C1}, ::Type{C2}) = color_rettype(C1,C2){promote_type(eltype(C1), eltype(C2))}
 promote_rule{T<:Real,C<:AbstractGray}(::Type{T}, ::Type{C}) = promote_type(T, eltype(C))
+
+@deprecate sumsq abs2
 
 end

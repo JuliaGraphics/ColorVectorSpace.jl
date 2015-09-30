@@ -8,7 +8,7 @@ import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     isnan, isless, length, norm, one, promote_array_type, promote_rule, zero,
     trunc, floor, round, ceil, bswap,
-    mod, rem, atan2, hypot
+    mod, rem, atan2, hypot, max, min
 
 # The unaryOps
 import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
@@ -245,6 +245,14 @@ div(a::AbstractGray, b::AbstractGray) = div(gray(a), gray(b))
 (.-)(a::AbstractGray, b::Number) = gray(a)-b
 (.+)(a::Number, b::AbstractGray) = a+gray(b)
 (.-)(a::Number, b::AbstractGray) = a-gray(b)
+max{T<:AbstractGray}(a::T, b::T) = T(max(gray(a),gray(b)))
+max(a::AbstractGray, b::AbstractGray) = max(promote(a,b)...)
+max(a::Number, b::AbstractGray) = max(promote(a,b)...)
+max(a::AbstractGray, b::Number) = max(promote(a,b)...)
+min{T<:AbstractGray}(a::T, b::T) = T(min(gray(a),gray(b)))
+min(a::AbstractGray, b::AbstractGray) = min(promote(a,b)...)
+min(a::Number, b::AbstractGray) = min(promote(a,b)...)
+min(a::AbstractGray, b::Number) = min(promote(a,b)...)
 
 isfinite{T<:AbstractFloat}(c::AbstractGray{T}) = isfinite(gray(c))
 isfinite(c::TransparentGrayFloat) = isfinite(gray(c)) && isfinite(alpha(c))

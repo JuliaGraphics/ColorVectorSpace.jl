@@ -1,6 +1,6 @@
 module ColorVectorSpaceTests
 
-using FactCheck, ColorVectorSpace, ColorTypes, FixedPointNumbers, Compat
+using FactCheck, Base.Test, ColorVectorSpace, ColorTypes, FixedPointNumbers, Compat
 
 macro test_colortype_approx_eq(a, b)
     :(test_colortype_approx_eq($(esc(a)), $(esc(b)), $(string(a)), $(string(b))))
@@ -85,6 +85,10 @@ facts("Colortypes") do
         @fact isless(0.5, g1) --> false
         @fact g1 < 0.5 --> true
         @fact 0.5 < g1 --> false
+        @fact @inferred(max(g1, g2)) --> g2
+        @fact @inferred(max(g1, 0.1)) --> 0.2
+        @fact @inferred(min(g1, g2)) --> g1
+        @fact @inferred(min(g1, 0.1)) --> 0.1
     end
 
     context("Unary operations with Gray") do

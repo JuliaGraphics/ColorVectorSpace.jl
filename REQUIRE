@@ -1,4 +1,3 @@
-julia 0.3
+julia 0.4
 ColorTypes
 FixedPointNumbers
-Compat

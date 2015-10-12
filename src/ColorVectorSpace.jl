@@ -35,7 +35,7 @@ typealias TransparentGrayFloat{C<:AbstractGray,T<:AbstractFloat} TransparentColo
 typealias TransparentRGBUFixed{C<:AbstractRGB,T<:UFixed} TransparentColor{C,T,4}
 typealias TransparentGrayUFixed{C<:AbstractGray,T<:UFixed} TransparentColor{C,T,2}
 
-typealias MathTypes Union{AbstractRGB,TransparentRGB,AbstractGray,TransparentRGB}
+typealias MathTypes{T,C} Union{AbstractRGB{T},TransparentRGB{C,T},AbstractGray{T},TransparentGray{C,T}}
 
 ## Generic algorithms
 mapreduce(f, op::Base.ShortCircuiting, a::MathTypes) = f(a)  # ambiguity
@@ -368,6 +368,10 @@ function minus!{T,N}(out, b::Colorant, A::AbstractArray{T,N})
     out
 end
 
+# Promotions for reductions
+for F in (Base.AddFun, Base.MulFun)
+    @eval Base.r_promote{T<:FixedPoint}(::$F, c::MathTypes{T}) = convert(base_colorant_type(typeof(c)){Float64}, c)
+end
 
 # To help type inference
 promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = base_colorant_type(C){Base.promote_array_type(F, T, eltype(C))}

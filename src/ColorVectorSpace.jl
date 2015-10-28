@@ -290,6 +290,17 @@ zero{C<:TransparentGray}(::Type{C}) = C(0,0)
 (.*){T<:Number}(b::AbstractGray, A::AbstractArray{T}) = mul(b, A)
 (./){C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray) = divd(A, b)
 
+Base.@vectorize_2arg Gray max
+Base.@vectorize_2arg Gray min
+for f in (:min, :max)
+    @eval begin
+        ($f){T<:Gray}(x::Number, y::AbstractArray{T}) =
+            reshape([ ($f)(x, y[i]) for i in eachindex(y) ], size(y))
+        ($f){T<:Gray}(x::AbstractArray{T}, y::Number) =
+            reshape([ ($f)(x[i], y) for i in eachindex(x) ], size(x))
+    end
+end
+
 (+){CV<:TransparentGray}(A::AbstractArray{CV}, b::TransparentGray) = (.+)(A, b)
 (+){CV<:TransparentGray}(b::TransparentGray, A::AbstractArray{CV}) = (.+)(b, A)
 (-){CV<:TransparentGray}(A::AbstractArray{CV}, b::TransparentGray) = (.-)(A, b)

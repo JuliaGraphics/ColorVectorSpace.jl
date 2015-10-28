@@ -6,6 +6,8 @@ macro test_colortype_approx_eq(a, b)
     :(test_colortype_approx_eq($(esc(a)), $(esc(b)), $(string(a)), $(string(b))))
 end
 
+u8sum(x,y) = Float64(UFixed8(x)) + Float64(UFixed8(y))
+
 FactCheck.roughly(x::Gray) = (y::Gray) -> isapprox(y, x)
 
 facts("Colortypes") do
@@ -75,6 +77,9 @@ facts("Colortypes") do
         @fact sumabs2([cf,ccmp]) --> roughly(0.05f0)
 
         @fact gray(0.8) --> 0.8
+
+        a = Gray{U8}[0.8,0.7]
+        @fact sum(a) --> Gray(u8sum(0.8,0.7))
     end
 
     context("Comparisons with Gray") do
@@ -124,6 +129,9 @@ facts("Colortypes") do
         @test_colortype_approx_eq ([p1].-p2)[1] GrayA{Float32}(Gray(0.2),-0.1)
         @test_colortype_approx_eq ([p1]/2)[1] GrayA{Float32}(Gray(0.4),0.1)
         @test_colortype_approx_eq (0.4f0*[p1]+0.6f0*[p2])[1] GrayA{Float32}(Gray(0.68),0.26)
+
+        a = GrayA{U8}[GrayA(0.8,0.7), GrayA(0.5,0.2)]
+        @fact sum(a) --> GrayA(u8sum(0.8,0.5), u8sum(0.7,0.2))
     end
 
     context("Arithemtic with RGB") do
@@ -174,6 +182,9 @@ facts("Colortypes") do
         @fact typeof(2*acf) --> Vector{RGB{Float32}}
         @fact typeof(convert(UInt8, 2)*acu) --> Vector{RGB{Float32}}
         @fact typeof(acu/2) --> Vector{RGB{typeof(U8(0.5)/2)}}
+
+        a = RGB{U8}[RGB(1,0,0), RGB(1,0.8,0)]
+        @fact sum(a) --> RGB(2.0,0.8,0)
     end
 
     context("Arithemtic with RGBA") do
@@ -229,6 +240,9 @@ facts("Colortypes") do
         @fact typeof(2*acf) --> Vector{RGBA{Float32}}
         @fact typeof(convert(UInt8, 2)*acu) --> Vector{RGBA{Float32}}
         @fact typeof(acu/2) --> Vector{RGBA{typeof(U8(0.5)/2)}}
+
+        a = RGBA{U8}[RGBA(1,0,0,0.8), RGBA(0.7,0.8,0,0.9)]
+        @fact sum(a) --> RGBA(u8sum(1,0.7),0.8,0,u8sum(0.8,0.9))
     end
 end
 

@@ -1,8 +1,8 @@
-VERSION >= v"0.4.0-dev+6521" && __precompile__(true)
+__precompile__(true)
 
 module ColorVectorSpace
 
-using ColorTypes, FixedPointNumbers, Compat, Base.Cartesian
+using ColorTypes, FixedPointNumbers, Base.Cartesian
 
 import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
@@ -32,18 +32,14 @@ typealias TransparentRGB{C<:AbstractRGB,T}   TransparentColor{C,T,4}
 typealias TransparentGray{C<:AbstractGray,T} TransparentColor{C,T,2}
 typealias TransparentRGBFloat{C<:AbstractRGB,T<:AbstractFloat} TransparentColor{C,T,4}
 typealias TransparentGrayFloat{C<:AbstractGray,T<:AbstractFloat} TransparentColor{C,T,2}
-typealias TransparentRGBUfixed{C<:AbstractRGB,T<:Ufixed} TransparentColor{C,T,4}
-typealias TransparentGrayUfixed{C<:AbstractGray,T<:Ufixed} TransparentColor{C,T,2}
+typealias TransparentRGBUFixed{C<:AbstractRGB,T<:UFixed} TransparentColor{C,T,4}
+typealias TransparentGrayUFixed{C<:AbstractGray,T<:UFixed} TransparentColor{C,T,2}
 
-@compat typealias MathTypes Union{AbstractRGB,TransparentRGB,AbstractGray,TransparentRGB}
+typealias MathTypes{T,C} Union{AbstractRGB{T},TransparentRGB{C,T},AbstractGray{T},TransparentGray{C,T}}
 
 ## Generic algorithms
-if VERSION >= v"0.4-"
-    mapreduce(f, op::Base.ShortCircuiting, a::MathTypes) = f(a)  # ambiguity
-    mapreduce(f, op, a::MathTypes) = f(a)
-else
-    mapreduce(f, op, a::MathTypes) = Base.evaluate(f, a)
-end
+mapreduce(f, op::Base.ShortCircuiting, a::MathTypes) = f(a)  # ambiguity
+mapreduce(f, op, a::MathTypes) = f(a)
 
 for f in (:trunc, :floor, :round, :ceil, :eps, :bswap)
     @eval $f{T}(g::Gray{T}) = Gray{T}($f(gray(g)))
@@ -58,15 +54,6 @@ eps{T}(::Type{Gray{T}}) = Gray(eps(T))
 for f in (:trunc, :floor, :round, :ceil)
     @eval $f{T<:Integer}(::Type{T}, g::Gray) = Gray{T}($f(T, gray(g)))
     @eval $f{T<:Integer,G<:Gray,Ti}(::Type{T}, A::SparseMatrixCSC{G,Ti}) = error("not defined") # fix ambiguity warning
-    # Resolve ambiguities with Compat versions
-    if VERSION < v"0.3.99"
-        @eval $f{T<:Integer,G<:Gray}(::Type{T}, A::AbstractArray{G,1}) = [($f)(A[i]) for i = 1:length(A)]
-        @eval $f{T<:Integer,G<:Gray}(::Type{T}, A::AbstractArray{G,2}) = [($f)(A[i,j]) for i = 1:size(A,1), j = 1:size(A,2)]
-    end
-    # The next resolve ambiguities with floatfuncs.jl definitions
-    if VERSION < v"0.4.0-dev+3847"
-        @eval $f{T<:Integer,G<:Gray}(::Type{T}, A::AbstractArray{G}) = reshape([($f)(A[i]) for i = 1:length(A)], size(A))
-    end
 end
 
 for f in (:mod, :rem, :mod1)
@@ -98,25 +85,25 @@ _color_rettype{C<:Colorant}(::Type{C}, ::Type{C}) = C
 color_rettype(c1::Colorant, c2::Colorant) = color_rettype(typeof(c1), typeof(c2))
 
 ## Math on Colors. These implementations encourage inlining and,
-## for the case of Ufixed types, nearly halve the number of multiplications (for RGB)
+## for the case of UFixed types, nearly halve the number of multiplications (for RGB)
 
 # Scalar RGB
 copy(c::AbstractRGB) = c
 (*)(f::Real, c::AbstractRGB) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c))
 (*)(f::Real, c::TransparentRGB) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c), f*alpha(c))
-function (*){T<:Ufixed}(f::Real, c::AbstractRGB{T})
+function (*){T<:UFixed}(f::Real, c::AbstractRGB{T})
     fs = f*(1/reinterpret(one(T)))
     base_colorant_type(c){multype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
-function (*){T<:Ufixed}(f::Ufixed, c::AbstractRGB{T})
+function (*){T<:UFixed}(f::UFixed, c::AbstractRGB{T})
     fs = reinterpret(f)*(1/widen(reinterpret(one(T)))^2)
     base_colorant_type(c){multype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
-function (/){T<:Ufixed}(c::AbstractRGB{T}, f::Real)
+function (/){T<:UFixed}(c::AbstractRGB{T}, f::Real)
     fs = (one(f)/reinterpret(one(T)))/f
     base_colorant_type(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
-function (/){T<:Ufixed}(c::AbstractRGB{T}, f::Integer)
+function (/){T<:UFixed}(c::AbstractRGB{T}, f::Integer)
     fs = (1/reinterpret(one(T)))/f
     base_colorant_type(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
@@ -139,21 +126,21 @@ end
 (./)(c::AbstractRGB, f::Real) = (/)(c, f)
 (./)(c::TransparentRGB, f::Real) = (/)(c, f)
 
-isfinite{T<:Ufixed}(c::Colorant{T}) = true
+isfinite{T<:UFixed}(c::Colorant{T}) = true
 isfinite{T<:AbstractFloat}(c::AbstractRGB{T}) = isfinite(red(c)) && isfinite(green(c)) && isfinite(blue(c))
 isfinite(c::TransparentRGBFloat) = isfinite(red(c)) && isfinite(green(c)) && isfinite(blue(c)) && isfinite(alpha(c))
-isnan{T<:Ufixed}(c::Colorant{T}) = false
+isnan{T<:UFixed}(c::Colorant{T}) = false
 isnan{T<:AbstractFloat}(c::AbstractRGB{T}) = isnan(red(c)) || isnan(green(c)) || isnan(blue(c))
 isnan(c::TransparentRGBFloat) = isnan(red(c)) || isnan(green(c)) || isnan(blue(c)) || isnan(alpha(c))
-isinf{T<:Ufixed}(c::Colorant{T}) = false
+isinf{T<:UFixed}(c::Colorant{T}) = false
 isinf{T<:AbstractFloat}(c::AbstractRGB{T}) = isinf(red(c)) || isinf(green(c)) || isinf(blue(c))
 isinf(c::TransparentRGBFloat) = isinf(red(c)) || isinf(green(c)) || isinf(blue(c)) || isinf(alpha(c))
 abs(c::AbstractRGB) = abs(red(c))+abs(green(c))+abs(blue(c)) # should this have a different name?
-abs{T<:Ufixed}(c::AbstractRGB{T}) = Float32(red(c))+Float32(green(c))+Float32(blue(c)) # should this have a different name?
+abs{T<:UFixed}(c::AbstractRGB{T}) = Float32(red(c))+Float32(green(c))+Float32(blue(c)) # should this have a different name?
 abs(c::TransparentRGB) = abs(red(c))+abs(green(c))+abs(blue(c))+abs(alpha(c)) # should this have a different name?
-abs{T<:Ufixed}(c::TransparentRGB{T}) = Float32(red(c))+Float32(green(c))+Float32(blue(c))+Float32(alpha(c)) # should this have a different name?
+abs{T<:UFixed}(c::TransparentRGB{T}) = Float32(red(c))+Float32(green(c))+Float32(blue(c))+Float32(alpha(c)) # should this have a different name?
 abs2(c::AbstractRGB) = red(c)^2+green(c)^2+blue(c)^2
-abs2{T<:Ufixed}(c::AbstractRGB{T}) = Float32(red(c))^2+Float32(green(c))^2+Float32(blue(c))^2
+abs2{T<:UFixed}(c::AbstractRGB{T}) = Float32(red(c))^2+Float32(green(c))^2+Float32(blue(c))^2
 
 one{C<:AbstractRGB}(::Type{C})     = C(1,1,1)
 one{C<:TransparentRGB}(::Type{C})  = C(1,1,1,1)
@@ -267,11 +254,11 @@ isinf{T<:AbstractFloat}(c::AbstractGray{T}) = isinf(gray(c))
 isinf(c::TransparentGrayFloat) = isinf(gray(c)) && isnan(alpha(c))
 norm(c::AbstractGray) = abs(gray(c))
 abs(c::TransparentGray) = abs(gray(c))+abs(alpha(c)) # should this have a different name?
-abs(c::TransparentGrayUfixed) = Float32(gray(c)) + Float32(alpha(c)) # should this have a different name?
+abs(c::TransparentGrayUFixed) = Float32(gray(c)) + Float32(alpha(c)) # should this have a different name?
 abs2(c::AbstractGray) = gray(c)^2
-abs2{T<:Ufixed}(c::AbstractGray{T}) = Float32(gray(c))^2
+abs2{T<:UFixed}(c::AbstractGray{T}) = Float32(gray(c))^2
 abs2(c::TransparentGray) = gray(c)^2+alpha(c)^2
-abs2(c::TransparentGrayUfixed) = Float32(gray(c))^2 + Float32(alpha(c))^2
+abs2(c::TransparentGrayUFixed) = Float32(gray(c))^2 + Float32(alpha(c))^2
 atan2(x::Gray, y::Gray) = atan2(convert(Real, x), convert(Real, y))
 hypot(x::Gray, y::Gray) = hypot(convert(Real, x), convert(Real, y))
 
@@ -302,14 +289,15 @@ zero{C<:TransparentGray}(::Type{C}) = C(0,0)
 (.*){T<:Number}(A::AbstractArray{T}, b::AbstractGray) = mul(A, b)
 (.*){T<:Number}(b::AbstractGray, A::AbstractArray{T}) = mul(b, A)
 (./){C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray) = divd(A, b)
-if VERSION < v"0.4.0-dev+6354"
-    function (.^){C<:AbstractGray}(A::StridedArray{C}, b::Real)
-        Cnew = base_colorant_type(C){powtype(eltype(C),typeof(b))}
-        out = similar(A, Cnew)
-        for (i,a) in enumerate(A)
-            out[i] = a^b
-        end
-        out
+
+Base.@vectorize_2arg Gray max
+Base.@vectorize_2arg Gray min
+for f in (:min, :max)
+    @eval begin
+        ($f){T<:Gray}(x::Number, y::AbstractArray{T}) =
+            reshape([ ($f)(x, y[i]) for i in eachindex(y) ], size(y))
+        ($f){T<:Gray}(x::AbstractArray{T}, y::Number) =
+            reshape([ ($f)(x[i], y) for i in eachindex(x) ], size(x))
     end
 end
 
@@ -355,56 +343,49 @@ function divd{C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray)
     div!(out, A, b)
 end
 
-# TODO: use iterators when we can rely on Julia 0.4
-@ngenerate N typeof(out) function plus!{T,N}(out, A::AbstractArray{T,N}, b)
-    @inbounds begin
-        @nloops N i A begin
-            @nref(N, out, i) = @nref(N, A, i) + b
+for (func, op) in ((:plus!, :+),
+                   (:minus!, :-),
+                   (:mul!, :*),
+                   (:div!, :/))
+    @eval begin
+        function $func{T,N}(out, A::AbstractArray{T,N}, b)
+            Rout, RA = eachindex(out), eachindex(A)
+            if Rout == RA
+                for I in RA
+                    @inbounds out[I] = $op(A[I], b)
+                end
+            else
+                for (Iout, IA) in zip(Rout, RA)
+                    @inbounds out[Iout] = $op(A[IA], b)
+                end
+            end
+            out
         end
     end
-    out
 end
-# need a separate minus! because of unsigned types
-@ngenerate N typeof(out) function minus!{T,N}(out, A::AbstractArray{T,N}, b::Colorant)  # TODO: change to b::T when julia #8045 fixed
-    @inbounds begin
-        @nloops N i A begin
-            @nref(N, out, i) = @nref(N, A, i) - b
+
+# This needs separate implementation because we can take -b of unsigned types
+function minus!{T,N}(out, b::Colorant, A::AbstractArray{T,N})
+    Rout, RA = eachindex(out), eachindex(A)
+    if Rout == RA
+        for I in RA
+            @inbounds out[I] = b - A[I]
         end
-    end
-    out
-end
-@ngenerate N typeof(out) function minus!{T,N}(out, b::Colorant, A::AbstractArray{T,N})
-    @inbounds begin
-        @nloops N i A begin
-            @nref(N, out, i) = b - @nref(N, A, i)
-        end
-    end
-    out
-end
-@ngenerate N typeof(out) function mul!{T,N}(out, A::AbstractArray{T,N}, b)
-    @inbounds begin
-        @nloops N i A begin
-            @nref(N, out, i) = @nref(N, A, i) * b
-        end
-    end
-    out
-end
-@ngenerate N typeof(out) function div!{T,N}(out, A::AbstractArray{T,N}, b)
-    @inbounds begin
-        @nloops N i A begin
-            @nref(N, out, i) = @nref(N, A, i) / b
+    else
+        for (Iout, IA) in zip(Rout, RA)
+            @inbounds out[Iout] = b - A[IA]
         end
     end
     out
 end
 
-# To help type inference
-if VERSION < v"0.4.0-dev+6354"
-    promote_array_type{T<:Real,C<:MathTypes}(::Type{T}, ::Type{C}) = base_colorant_type(C){promote_type(T, eltype(C))}
-#     promote_rule{C<:MathTypes,S<:Integer}(::Type{C}, ::Type{S}) = base_colorant_type(C){promote_type(eltype(C), S)} # for Array{RGB}./Array{Int}
-else
-    promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = base_colorant_type(C){Base.promote_array_type(F, T, eltype(C))}
+# Promotions for reductions
+for F in (Base.AddFun, Base.MulFun)
+    @eval Base.r_promote{T<:FixedPoint}(::$F, c::MathTypes{T}) = convert(base_colorant_type(typeof(c)){Float64}, c)
 end
+
+# To help type inference
+promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = base_colorant_type(C){Base.promote_array_type(F, T, eltype(C))}
 promote_rule{C1<:Colorant,C2<:Colorant}(::Type{C1}, ::Type{C2}) = color_rettype(C1,C2){promote_type(eltype(C1), eltype(C2))}
 promote_rule{T<:Real,C<:AbstractGray}(::Type{T}, ::Type{C}) = promote_type(T, eltype(C))
 

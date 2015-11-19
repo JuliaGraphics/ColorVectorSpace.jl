@@ -338,7 +338,7 @@ function mul{T<:Number}(A::AbstractArray{T}, b::Colorant)
 end
 mul{T<:Number}(b::Colorant, A::AbstractArray{T}) = mul(A, b)
 function divd{C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray)
-    bT = typeof(one(C)/b)
+    bT = typeof(zero(C)/b)
     out = similar(A, bT)
     div!(out, A, b)
 end

@@ -8,7 +8,7 @@ import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     isnan, isless, length, mapreduce, norm, one, promote_array_type, promote_rule, zero,
     trunc, floor, round, ceil, bswap,
-    mod, rem, atan2, hypot, max, min
+    mod, rem, atan2, hypot, max, min, varm, real
 
 # The unaryOps
 import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
@@ -313,6 +313,10 @@ end
 (.-){C<:TransparentGray}(b::TransparentGray, A::AbstractArray{C}) = minus(b, A)
 (.*){T<:Number}(A::AbstractArray{T}, b::TransparentGray) = mul(A, b)
 (.*){T<:Number}(b::TransparentGray, A::AbstractArray{T}) = mul(b, A)
+
+varm{C<:AbstractGray}(v::AbstractArray{C}, s::AbstractGray; corrected::Bool=true) =
+        varm(map(gray,v),gray(s); corrected=corrected)
+real{C<:AbstractGray}(::Type{C}) = real(eltype(C))
 
 # Called plus/minus instead of plus/sub because `sub` already has a meaning!
 function plus(A::AbstractArray, b::Colorant)

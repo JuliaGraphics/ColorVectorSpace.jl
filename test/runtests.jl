@@ -80,6 +80,8 @@ facts("Colortypes") do
 
         a = Gray{U8}[0.8,0.7]
         @fact sum(a) --> Gray(u8sum(0.8,0.7))
+        @fact abs( var(a) - (a[1]-a[2])^2 / 2 ) --> less_than(0.001)
+        @fact real(Gray{Float32}) <: Real --> true
     end
 
     context("Comparisons with Gray") do

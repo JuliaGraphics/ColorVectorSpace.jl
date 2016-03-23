@@ -8,7 +8,7 @@ import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     isnan, isless, length, mapreduce, norm, one, promote_array_type, promote_rule, zero,
     trunc, floor, round, ceil, bswap,
-    mod, rem, atan2, hypot, max, min, varm, real
+    mod, rem, atan2, hypot, max, min, varm, real, histrange
 
 # The unaryOps
 import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
@@ -384,6 +384,9 @@ function minus!{T,N}(out, b::Colorant, A::AbstractArray{T,N})
     end
     out
 end
+
+#histrange for Gray type
+Base.histrange{T}(v::AbstractArray{Gray{T}}, n::Integer) = histrange(convert(Array{Float32}, map(gray, v)), n)
 
 # Promotions for reductions
 for F in (Base.AddFun, Base.MulFun)

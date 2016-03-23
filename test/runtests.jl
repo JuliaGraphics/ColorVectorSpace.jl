@@ -82,9 +82,10 @@ facts("Colortypes") do
         @fact sum(a) --> Gray(u8sum(0.8,0.7))
         @fact abs( var(a) - (a[1]-a[2])^2 / 2 ) --> less_than(0.001)
         @fact real(Gray{Float32}) <: Real --> true
-
         @fact zero(ColorTypes.Gray)-->0
         @fact one(ColorTypes.Gray)-->1
+        a = Gray{U8}[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        @fact histrange(a,10)-->0.1:0.1:1   
     end
 
     context("Comparisons with Gray") do

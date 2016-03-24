@@ -272,7 +272,9 @@ isless(r::Real, c::AbstractGray) = isless(r, gray(c))
 Base.isapprox(x::AbstractGray, y::AbstractGray; kwargs...) = isapprox(gray(x), gray(y); kwargs...)
 
 zero{C<:TransparentGray}(::Type{C}) = C(0,0)
- one{C<:TransparentGray}(::Type{C}) = C(1,1)
+zero{C<:Gray}(::Type{C}) = C(0)
+one{C<:TransparentGray}(::Type{C}) = C(1,1)
+one{C<:Gray}(::Type{C}) = C(1)
 
  # Arrays
 (+){CV<:AbstractGray}(A::AbstractArray{CV}, b::AbstractGray) = (.+)(A, b)

@@ -150,6 +150,12 @@ one(p::Colorant) = one(typeof(p))
 zero(p::Colorant) = zero(typeof(p))
 typemin{C<:AbstractRGB}(::Type{C}) = zero(C)
 typemax{C<:AbstractRGB}(::Type{C}) = one(C)
+typemin{C<:AbstractGray}(::Type{C}) = zero(C)
+typemax{C<:AbstractGray}(::Type{C}) = one(C)
+typemin{C<:TransparentGray}(::Type{C}) = zero(C)
+typemax{C<:TransparentGray}(::Type{C}) = one(C)
+typemin{C<:TransparentRGB}(::Type{C}) = zero(C)
+typemax{C<:TransparentRGB}(::Type{C}) = one(C)
 
 # Arrays
 (+){CV<:AbstractRGB}(A::AbstractArray{CV}, b::AbstractRGB) = (.+)(A, b)

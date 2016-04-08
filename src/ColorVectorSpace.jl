@@ -186,7 +186,7 @@ typemax{C<:TransparentRGB}(::Type{C}) = one(C)
 
 # Scalar Gray
 copy(c::AbstractGray) = c
-const unaryOps = (:-, :~, :conj, :abs,
+const unaryOps = (:~, :conj, :abs,
                   :sin, :cos, :tan, :sinh, :cosh, :tanh,
                   :asin, :acos, :atan, :asinh, :acosh, :atanh,
                   :sec, :csc, :cot, :asec, :acsc, :acot,
@@ -274,7 +274,6 @@ hypot(x::Gray, y::Gray) = hypot(convert(Real, x), convert(Real, y))
 isless(g1::AbstractGray, g2::AbstractGray) = isless(gray(g1), gray(g2))
 isless(c::AbstractGray, r::Real) = isless(gray(c), r)
 isless(r::Real, c::AbstractGray) = isless(r, gray(c))
-(<)(a::AbstractGray, b::AbstractGray) = gray(a) < gray(b)
 Base.isapprox(x::AbstractGray, y::AbstractGray; kwargs...) = isapprox(gray(x), gray(y); kwargs...)
 
 zero{C<:TransparentGray}(::Type{C}) = C(0,0)

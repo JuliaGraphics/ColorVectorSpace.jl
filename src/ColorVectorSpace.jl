@@ -2,7 +2,7 @@ __precompile__(true)
 
 module ColorVectorSpace
 
-using ColorTypes, FixedPointNumbers, Base.Cartesian
+using ColorTypes, FixedPointNumbers
 
 import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
@@ -394,8 +394,12 @@ end
 Base.histrange{T}(v::AbstractArray{Gray{T}}, n::Integer) = histrange(convert(Array{Float32}, map(gray, v)), n)
 
 # Promotions for reductions
-for F in (Base.AddFun, Base.MulFun)
-    @eval Base.r_promote{T<:FixedPoint}(::$F, c::MathTypes{T}) = convert(base_colorant_type(typeof(c)){Float64}, c)
+if VERSION < v"0.5.0-dev+3701"
+    Base.r_promote{T<:FixedPoint}(::Base.AddFun, c::MathTypes{T}) = convert(base_colorant_type(typeof(c)){Float64}, c)
+    Base.r_promote{T<:FixedPoint}(::Base.MulFun, c::MathTypes{T}) = convert(base_colorant_type(typeof(c)){Float64}, c)
+else
+    Base.r_promote{T<:FixedPoint}(::typeof(+), c::MathTypes{T}) = convert(base_colorant_type(typeof(c)){Float64}, c)
+    Base.r_promote{T<:FixedPoint}(::typeof(*), c::MathTypes{T}) = convert(base_colorant_type(typeof(c)){Float64}, c)
 end
 
 # To help type inference

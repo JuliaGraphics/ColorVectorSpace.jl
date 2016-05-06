@@ -4,10 +4,10 @@ module ColorVectorSpace
 
 using ColorTypes, FixedPointNumbers
 
-import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, <, ~
+import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, .^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
-    isnan, isless, length, mapreduce, norm, one, promote_array_type, promote_rule, zero,
-    trunc, floor, round, ceil, bswap,
+    isnan, isless, length, mapreduce, norm, one, promote_array_type,
+    promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
     mod, rem, atan2, hypot, max, min, varm, real, histrange
 
 # The unaryOps
@@ -229,6 +229,7 @@ end
 (*){S,T}(a::AbstractGray{S}, b::AbstractGray{T}) = color_rettype(a,b){multype(S,T)}(gray(a)*gray(b))
 (^){S}(a::AbstractGray{S}, b::Integer) = base_colorant_type(a){powtype(S,Int)}(gray(a)^convert(Int,b))
 (^){S}(a::AbstractGray{S}, b::Real) = base_colorant_type(a){powtype(S,typeof(b))}(gray(a)^b)
+(.^){S}(a::AbstractGray{S}, b) = a^b
 (+)(c::AbstractGray) = c
 (+)(c::TransparentGray) = c
 (-)(c::AbstractGray) = typeof(c)(-gray(c))
@@ -404,6 +405,8 @@ end
 
 # To help type inference
 promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = base_colorant_type(C){Base.promote_array_type(F, T, eltype(C))}
+promote_op{C<:MathTypes,T<:Real}(F, ::Type{C}, ::Type{T}) = typeof(F(zero(C), zero(T)))
+promote_op{C<:MathTypes,T<:Real}(F, ::Type{T}, ::Type{C}) = typeof(F(zero(T), zero(C)))
 promote_rule{C1<:Colorant,C2<:Colorant}(::Type{C1}, ::Type{C2}) = color_rettype(C1,C2){promote_type(eltype(C1), eltype(C2))}
 promote_rule{T<:Real,C<:AbstractGray}(::Type{T}, ::Type{C}) = promote_type(T, eltype(C))
 

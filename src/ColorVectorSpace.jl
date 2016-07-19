@@ -8,7 +8,7 @@ import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, .^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     isnan, isless, length, mapreduce, norm, one, promote_array_type,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
-    mod, rem, atan2, hypot, max, min, varm, real, histrange
+    mod, rem, atan2, hypot, max, min, varm, real, histrange, typemin, typemax
 
 # The unaryOps
 import Base:      conj, sin, cos, tan, sinh, cosh, tanh,

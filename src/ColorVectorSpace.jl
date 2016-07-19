@@ -2,7 +2,7 @@ __precompile__(true)
 
 module ColorVectorSpace
 
-using ColorTypes, FixedPointNumbers
+using ColorTypes, FixedPointNumbers, StatsBase
 
 import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, .^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
@@ -394,7 +394,7 @@ function minus!{T,N}(out, b::Colorant, A::AbstractArray{T,N})
 end
 
 #histrange for Gray type
-Base.histrange{T}(v::AbstractArray{Gray{T}}, n::Integer) = histrange(convert(Array{Float32}, map(gray, v)), n)
+StatsBase.histrange{T}(v::AbstractArray{Gray{T}}, n::Integer) = StatsBase.histrange(convert(Array{Float32}, map(gray, v)), n)
 
 # Promotions for reductions
 if VERSION < v"0.5.0-dev+3701"

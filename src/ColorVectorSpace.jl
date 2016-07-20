@@ -278,6 +278,7 @@ isless(g1::AbstractGray, g2::AbstractGray) = isless(gray(g1), gray(g2))
 isless(c::AbstractGray, r::Real) = isless(gray(c), r)
 isless(r::Real, c::AbstractGray) = isless(r, gray(c))
 Base.isapprox(x::AbstractGray, y::AbstractGray; kwargs...) = isapprox(gray(x), gray(y); kwargs...)
+Base.isapprox(x::AbstractRGB, y::AbstractRGB; kwargs...) = isapprox(red(x), red(y); kwargs...) && isapprox(green(x), green(y); kwargs...) && isapprox(blue(x), blue(y); kwargs...)
 
 zero{C<:TransparentGray}(::Type{C}) = C(0,0)
 zero{C<:Gray}(::Type{C}) = C(0)

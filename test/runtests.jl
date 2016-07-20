@@ -197,6 +197,14 @@ facts("Colortypes") do
 
         a = RGB{U8}[RGB(1,0,0), RGB(1,0.8,0)]
         @fact sum(a) --> RGB(2.0,0.8,0)
+        a = RGB{Float64}(1.0, 1.0, 0.9999999999999999)
+        b = RGB{Float64}(1.0, 1.0, 1.0)
+
+        @fact isapprox(a, b) --> true
+        a = RGB{Float64}(1.0, 1.0, 0.99)
+        @fact isapprox(a, b, rtol = 0.01) --> false
+        @fact isapprox(a, b, rtol = 0.1) --> true
+
     end
 
     context("Arithemtic with RGBA") do

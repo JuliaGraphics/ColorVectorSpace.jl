@@ -8,7 +8,7 @@ import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, .^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     isnan, isless, length, mapreduce, norm, one, promote_array_type,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
-    mod, rem, atan2, hypot, max, min, varm, real, histrange
+    mod, rem, atan2, hypot, max, min, varm, real, histrange, rand
 
 # The unaryOps
 import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
@@ -36,6 +36,7 @@ typealias TransparentRGBUFixed{C<:AbstractRGB,T<:UFixed} TransparentColor{C,T,4}
 typealias TransparentGrayUFixed{C<:AbstractGray,T<:UFixed} TransparentColor{C,T,2}
 
 typealias MathTypes{T,C} Union{AbstractRGB{T},TransparentRGB{C,T},AbstractGray{T},TransparentGray{C,T}}
+typealias MathTypesFloat{C,T<:Union{Float16,Float32,Float64}} MathTypes{T,C}
 
 ## Generic algorithms
 mapreduce(f, op::Base.ShortCircuiting, a::MathTypes) = f(a)  # ambiguity
@@ -283,6 +284,21 @@ zero{C<:TransparentGray}(::Type{C}) = C(0,0)
 zero{C<:Gray}(::Type{C}) = C(0)
 one{C<:TransparentGray}(::Type{C}) = C(1,1)
 one{C<:Gray}(::Type{C}) = C(1)
+
+# rand
+rand{G<:AbstractGray}(::Type{G}) = G(rand())
+rand{G<:TransparentGray}(::Type{G}) = G(rand(), rand())
+rand{C<:AbstractRGB}(::Type{C}) = C(rand(), rand(), rand())
+rand{C<:TransparentRGB}(::Type{C}) = C(rand(), rand(), rand(), rand())
+function rand{C<:MathTypesFloat}(::Type{C}, sz::Dims)
+    reinterpret(C, rand(eltype(C), (sizeof(C)÷sizeof(eltype(C)), sz...)), sz)
+end
+function rand{C<:MathTypes{U8}}(::Type{C}, sz::Dims)
+    reinterpret(C, rand(UInt8, (sizeof(C), sz...)), sz)
+end
+function rand{C<:MathTypes{U16}}(::Type{C}, sz::Dims)
+    reinterpret(C, rand(UInt16, (sizeof(C)>>1, sz...)), sz)
+end
 
  # Arrays
 (+){CV<:AbstractGray}(A::AbstractArray{CV}, b::AbstractGray) = (.+)(A, b)

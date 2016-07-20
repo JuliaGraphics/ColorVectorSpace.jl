@@ -256,6 +256,18 @@ facts("Colortypes") do
         a = RGBA{U8}[RGBA(1,0,0,0.8), RGBA(0.7,0.8,0,0.9)]
         @fact sum(a) --> RGBA(u8sum(1,0.7),0.8,0,u8sum(0.8,0.9))
     end
+
+    context("rand") do
+        for T in (Gray{U8}, AGray{Float32}, GrayA{Float64},
+                  RGB{U8}, ARGB{U16}, RGBA{Float32},
+                  BGR{Float16}, RGB1{U8}, RGB4{Float64}, ABGR{U8})
+            a = rand(T)
+            @fact isa(a, T) --> true
+            a = rand(T, (3, 5))
+            @fact isa(a, Array{T,2}) --> true
+            @fact size(a) --> (3,5)
+        end
+    end
 end
 
 isinteractive() || FactCheck.exitstatus()

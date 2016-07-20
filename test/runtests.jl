@@ -109,6 +109,13 @@ facts("Colortypes") do
         @fact @inferred(max(g1, 0.1)) --> 0.2
         @fact @inferred(min(g1, g2)) --> g1
         @fact @inferred(min(g1, 0.1)) --> 0.1
+        a = Gray{Float64}(0.9999999999999999)
+        b = Gray{Float64}(1.0)
+
+        @fact isapprox(a, b) --> true
+        a = Gray{Float64}(0.99)
+        @fact isapprox(a, b, rtol = 0.01) --> false
+        @fact isapprox(a, b, rtol = 0.1) --> true
     end
 
     context("Unary operations with Gray") do
@@ -144,6 +151,14 @@ facts("Colortypes") do
 
         a = GrayA{U8}[GrayA(0.8,0.7), GrayA(0.5,0.2)]
         @fact sum(a) --> GrayA(u8sum(0.8,0.5), u8sum(0.7,0.2))
+        a = AGray{Float64}(1.0, 0.9999999999999999)
+        b = AGray{Float64}(1.0, 1.0)
+
+        @fact isapprox(a, b) --> true
+        a = AGray{Float64}(1.0, 0.99)
+        @fact isapprox(a, b, rtol = 0.01) --> false
+        @fact isapprox(a, b, rtol = 0.1) --> true
+
     end
 
     context("Arithemtic with RGB") do
@@ -204,7 +219,6 @@ facts("Colortypes") do
         a = RGB{Float64}(1.0, 1.0, 0.99)
         @fact isapprox(a, b, rtol = 0.01) --> false
         @fact isapprox(a, b, rtol = 0.1) --> true
-
     end
 
     context("Arithemtic with RGBA") do
@@ -263,6 +277,13 @@ facts("Colortypes") do
 
         a = RGBA{U8}[RGBA(1,0,0,0.8), RGBA(0.7,0.8,0,0.9)]
         @fact sum(a) --> RGBA(u8sum(1,0.7),0.8,0,u8sum(0.8,0.9))
+        a = ARGB{Float64}(1.0, 1.0, 1.0, 0.9999999999999999)
+        b = ARGB{Float64}(1.0, 1.0, 1.0, 1.0)
+
+        @fact isapprox(a, b) --> true
+        a = ARGB{Float64}(1.0, 1.0, 1.0, 0.99)
+        @fact isapprox(a, b, rtol = 0.01) --> false
+        @fact isapprox(a, b, rtol = 0.1) --> true
     end
 end
 

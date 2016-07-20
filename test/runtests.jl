@@ -285,6 +285,18 @@ facts("Colortypes") do
         @fact isapprox(a, b, rtol = 0.01) --> false
         @fact isapprox(a, b, rtol = 0.1) --> true
     end
+
+    context("rand") do
+        for T in (Gray{U8}, AGray{Float32}, GrayA{Float64},
+                  RGB{U8}, ARGB{U16}, RGBA{Float32},
+                  BGR{Float16}, RGB1{U8}, RGB4{Float64}, ABGR{U8})
+            a = rand(T)
+            @fact isa(a, T) --> true
+            a = rand(T, (3, 5))
+            @fact isa(a, Array{T,2}) --> true
+            @fact size(a) --> (3,5)
+        end
+    end
 end
 
 isinteractive() || FactCheck.exitstatus()

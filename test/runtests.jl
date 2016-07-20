@@ -1,6 +1,6 @@
 module ColorVectorSpaceTests
 
-using FactCheck, Base.Test, ColorVectorSpace, ColorTypes, FixedPointNumbers, Compat
+using FactCheck, Base.Test, ColorVectorSpace, ColorTypes, FixedPointNumbers, Compat, StatsBase
 
 macro test_colortype_approx_eq(a, b)
     :(test_colortype_approx_eq($(esc(a)), $(esc(b)), $(string(a)), $(string(b))))
@@ -85,13 +85,13 @@ facts("Colortypes") do
         @fact zero(ColorTypes.Gray)-->0
         @fact one(ColorTypes.Gray)-->1
         a = Gray{U8}[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-        @fact histrange(a,10)-->0.1:0.1:1   
+        @fact StatsBase.histrange(a,10)-->0.1f0:0.1f0:1f0
 
-        @fact ColorVectorSpace.typemin(RGB)-->RGB(0,0,0)
-        @fact ColorVectorSpace.typemin(Gray)-->Gray(0)
-        @fact ColorVectorSpace.typemax(Gray)-->Gray(1)
-        @fact ColorVectorSpace.typemin(ARGB)-->ARGB(0,0,0,0)
-        @fact ColorVectorSpace.typemax(ARGB)-->ARGB(1,1,1,1)
+        @fact typemin(RGB)-->RGB(0,0,0)
+        @fact typemin(Gray)-->Gray(0)
+        @fact typemax(Gray)-->Gray(1)
+        @fact typemin(ARGB)-->ARGB(0,0,0,0)
+        @fact typemax(ARGB)-->ARGB(1,1,1,1)
     end
 
     context("Comparisons with Gray") do

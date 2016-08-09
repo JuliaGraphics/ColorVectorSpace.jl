@@ -141,6 +141,9 @@ abs(c::TransparentRGB) = abs(red(c))+abs(green(c))+abs(blue(c))+abs(alpha(c)) # 
 abs{T<:UFixed}(c::TransparentRGB{T}) = Float32(red(c))+Float32(green(c))+Float32(blue(c))+Float32(alpha(c)) # should this have a different name?
 abs2(c::AbstractRGB) = red(c)^2+green(c)^2+blue(c)^2
 abs2{T<:UFixed}(c::AbstractRGB{T}) = Float32(red(c))^2+Float32(green(c))^2+Float32(blue(c))^2
+abs2(c::TransparentRGB) = (ret = abs2(color(c)); ret + convert(typeof(ret), alpha(c))^2)
+norm(c::AbstractRGB) = sqrt(abs2(c))
+norm(c::TransparentRGB) = sqrt(abs2(c))
 
 one{C<:AbstractRGB}(::Type{C})     = C(1,1,1)
 one{C<:TransparentRGB}(::Type{C})  = C(1,1,1,1)
@@ -270,6 +273,7 @@ abs2(c::TransparentGray) = gray(c)^2+alpha(c)^2
 abs2(c::TransparentGrayUFixed) = Float32(gray(c))^2 + Float32(alpha(c))^2
 atan2(x::Gray, y::Gray) = atan2(convert(Real, x), convert(Real, y))
 hypot(x::Gray, y::Gray) = hypot(convert(Real, x), convert(Real, y))
+norm(c::TransparentGray) = sqrt(abs2(c))
 
 (<)(g1::AbstractGray, g2::AbstractGray) = gray(g1) < gray(g2)
 (<)(c::AbstractGray, r::Real) = gray(c) < r
@@ -281,6 +285,20 @@ Base.isapprox(x::AbstractGray, y::AbstractGray; kwargs...) = isapprox(gray(x), g
 Base.isapprox(x::TransparentGray, y::TransparentGray; kwargs...) = isapprox(gray(x), gray(y); kwargs...) && isapprox(alpha(x), alpha(y); kwargs...)
 Base.isapprox(x::AbstractRGB, y::AbstractRGB; kwargs...) = isapprox(red(x), red(y); kwargs...) && isapprox(green(x), green(y); kwargs...) && isapprox(blue(x), blue(y); kwargs...)
 Base.isapprox(x::TransparentRGB, y::TransparentRGB; kwargs...) = isapprox(alpha(x), alpha(y); kwargs...) && isapprox(red(x), red(y); kwargs...) && isapprox(green(x), green(y); kwargs...) && isapprox(blue(x), blue(y); kwargs...)
+
+function Base.isapprox{Cx<:MathTypes,Cy<:MathTypes}(x::AbstractArray{Cx},
+                                                    y::AbstractArray{Cy};
+                                                    rtol::Real=Base.rtoldefault(eltype(Cx),eltype(Cy)),
+                                                    atol::Real=0,
+                                                    norm::Function=vecnorm)
+    d = norm(x - y)
+    if isfinite(d)
+        return d <= atol + rtol*max(norm(x), norm(y))
+    else
+        # Fall back to a component-wise approximate comparison
+        return all(ab -> isapprox(ab[1], ab[2]; rtol=rtol, atol=atol), zip(x, y))
+    end
+end
 
 zero{C<:TransparentGray}(::Type{C}) = C(0,0)
 zero{C<:Gray}(::Type{C}) = C(0)

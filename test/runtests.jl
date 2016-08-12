@@ -31,6 +31,7 @@ facts("Colortypes") do
         @test_colortype_approx_eq cf^3.0f0 Gray{Float32}(0.001)
         @fact eltype(2.0*cf) --> Float64
         @fact abs2(ccmp) --> 0.2f0^2
+        @fact norm(cf) --> 0.1f0
         @fact sumabs2(ccmp) --> 0.2f0^2
         cu = Gray{U8}(0.1)
         @fact 2*cu --> Gray(2*cu.val)
@@ -81,11 +82,12 @@ facts("Colortypes") do
         a = Gray{U8}[0.8,0.7]
         @fact sum(a) --> Gray(u8sum(0.8,0.7))
         @fact abs( var(a) - (a[1]-a[2])^2 / 2 ) --> less_than(0.001)
+        @fact isapprox(a, a) --> true
         @fact real(Gray{Float32}) <: Real --> true
         @fact zero(ColorTypes.Gray)-->0
         @fact one(ColorTypes.Gray)-->1
         a = Gray{U8}[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-        @fact histrange(a,10)-->0.1:0.1:1   
+        @fact histrange(a,10)-->0.1:0.1:1
 
         @fact ColorVectorSpace.typemin(RGB)-->RGB(0,0,0)
         @fact ColorVectorSpace.typemin(Gray)-->Gray(0)
@@ -151,6 +153,7 @@ facts("Colortypes") do
 
         a = GrayA{U8}[GrayA(0.8,0.7), GrayA(0.5,0.2)]
         @fact sum(a) --> GrayA(u8sum(0.8,0.5), u8sum(0.7,0.2))
+        @fact isapprox(a, a) --> true
         a = AGray{Float64}(1.0, 0.9999999999999999)
         b = AGray{Float64}(1.0, 1.0)
 
@@ -195,6 +198,7 @@ facts("Colortypes") do
         @fact RGB(1, Inf, 0.5) --> not(isnan)
         @fact abs(RGB(0.1,0.2,0.3)) --> roughly(0.6)
         @fact sumabs2(RGB(0.1,0.2,0.3)) --> roughly(0.14)
+        @fact norm(RGB(0.1,0.2,0.3)) --> roughly(sqrt(0.14))
 
         acu = RGB{U8}[cu]
         acf = RGB{Float32}[cf]
@@ -212,6 +216,7 @@ facts("Colortypes") do
 
         a = RGB{U8}[RGB(1,0,0), RGB(1,0.8,0)]
         @fact sum(a) --> RGB(2.0,0.8,0)
+        @fact isapprox(a, a) --> true
         a = RGB{Float64}(1.0, 1.0, 0.9999999999999999)
         b = RGB{Float64}(1.0, 1.0, 1.0)
 
@@ -277,6 +282,7 @@ facts("Colortypes") do
 
         a = RGBA{U8}[RGBA(1,0,0,0.8), RGBA(0.7,0.8,0,0.9)]
         @fact sum(a) --> RGBA(u8sum(1,0.7),0.8,0,u8sum(0.8,0.9))
+        @fact isapprox(a, a) --> true
         a = ARGB{Float64}(1.0, 1.0, 1.0, 0.9999999999999999)
         b = ARGB{Float64}(1.0, 1.0, 1.0, 1.0)
 

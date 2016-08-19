@@ -19,6 +19,22 @@ facts("Colortypes") do
         end
     end
 
+    context("nan") do
+        function make_checked_nan{T}(::Type{T})
+            x = nan(T)
+            isa(x, T) && isnan(x)
+        end
+        for S in (Float32, Float64)
+            @fact make_checked_nan(S) --> true
+            @fact make_checked_nan(Gray{S}) --> true
+            @fact make_checked_nan(AGray{S}) --> true
+            @fact make_checked_nan(GrayA{S}) --> true
+            @fact make_checked_nan(RGB{S}) --> true
+            @fact make_checked_nan(ARGB{S}) --> true
+            @fact make_checked_nan(ARGB{S}) --> true
+        end
+    end
+
     context("Arithmetic with Gray") do
         cf = Gray{Float32}(0.1)
         ccmp = Gray{Float32}(0.2)

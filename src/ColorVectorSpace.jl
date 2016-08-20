@@ -80,14 +80,17 @@ end
 ColorTypes.gray(x::Real) = x
 
 # Return types for arithmetic operations
-multype(a::Type,b::Type) = typeof(one(a)*one(b))
-sumtype(a::Type,b::Type) = typeof(one(a)+one(b))
-divtype(a::Type,b::Type) = typeof(one(a)/one(b))
-powtype(a::Type,b::Type) = typeof(one(a)^one(b))
+multype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)*zero(B)))
+sumtype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)+zero(B)))
+divtype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)/zero(B)))
+powtype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)^zero(B)))
 multype(a::Colorant, b::Colorant) = multype(eltype(a),eltype(b))
 sumtype(a::Colorant, b::Colorant) = sumtype(eltype(a),eltype(b))
 divtype(a::Colorant, b::Colorant) = divtype(eltype(a),eltype(b))
 powtype(a::Colorant, b::Colorant) = powtype(eltype(a),eltype(b))
+
+coltype{T<:Fractional}(::Type{T}) = T
+coltype{T}(::Type{T})             = Float64
 
 # Scalar binary RGB operations require the same RGB type for each element,
 # otherwise we don't know which to return

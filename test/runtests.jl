@@ -9,6 +9,7 @@ end
 u8sum(x,y) = Float64(UFixed8(x)) + Float64(UFixed8(y))
 
 FactCheck.roughly(x::Gray) = (y::Gray) -> isapprox(y, x)
+FactCheck.roughly(x::RGB) = (y::RGB) -> isapprox(y, x)
 
 facts("Colortypes") do
     function test_colortype_approx_eq(a::Colorant, b::Colorant, astr, bstr)
@@ -194,6 +195,7 @@ facts("Colortypes") do
         @fact cu/2 --> RGB(cu.r/2,cu.g/2,cu.b/2)
         @fact cu/0.5f0 --> RGB(cu.r/0.5f0, cu.g/0.5f0, cu.b/0.5f0)
         @fact cf+cf --> ccmp
+        @fact cu * 1//2 --> roughly(RGB{Float64}(U8(0.1)/2, U8(0.2)/2, U8(0.3)/2))
         @test_colortype_approx_eq (cf*[0.8f0])[1] RGB{Float32}(0.8*0.1,0.8*0.2,0.8*0.3)
         @test_colortype_approx_eq ([0.8f0]*cf)[1] RGB{Float32}(0.8*0.1,0.8*0.2,0.8*0.3)
         @test_colortype_approx_eq (cf.*[0.8f0])[1] RGB{Float32}(0.8*0.1,0.8*0.2,0.8*0.3)

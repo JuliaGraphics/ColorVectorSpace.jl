@@ -10,6 +10,12 @@ import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
     mod, rem, atan2, hypot, max, min, varm, real, histrange
 
+if VERSION < v"0.5.0-dev"
+    import Base.nan
+else
+    export nan
+end
+
 # The unaryOps
 import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   asin, acos, atan, asinh, acosh, atanh,
@@ -36,6 +42,16 @@ typealias TransparentRGBUFixed{C<:AbstractRGB,T<:UFixed} TransparentColor{C,T,4}
 typealias TransparentGrayUFixed{C<:AbstractGray,T<:UFixed} TransparentColor{C,T,2}
 
 typealias MathTypes{T,C} Union{AbstractRGB{T},TransparentRGB{C,T},AbstractGray{T},TransparentGray{C,T}}
+
+# convert(RGB{Float32}, NaN) doesn't and shouldn't work, so we need to reintroduce nan
+if VERSION >= v"0.5.0-dev"
+    nan{T<:AbstractFloat}(::Type{T}) = convert(T, NaN)
+end
+nan{C<:MathTypes}(::Type{C}) = _nan(eltype(C), C)
+_nan{T<:AbstractFloat,C<:AbstractGray}(::Type{T}, ::Type{C}) = (x = convert(T, NaN); C(x))
+_nan{T<:AbstractFloat,C<:TransparentGray}(::Type{T}, ::Type{C}) = (x = convert(T, NaN); C(x,x))
+_nan{T<:AbstractFloat,C<:AbstractRGB}(::Type{T}, ::Type{C}) = (x = convert(T, NaN); C(x,x,x))
+_nan{T<:AbstractFloat,C<:TransparentRGB}(::Type{T}, ::Type{C}) = (x = convert(T, NaN); C(x,x,x,x))
 
 ## Generic algorithms
 mapreduce(f, op::Base.ShortCircuiting, a::MathTypes) = f(a)  # ambiguity

@@ -2,7 +2,7 @@ __precompile__(true)
 
 module ColorVectorSpace
 
-using ColorTypes, FixedPointNumbers
+using ColorTypes, FixedPointNumbers, Compat
 
 import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, .^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
@@ -59,14 +59,14 @@ mapreduce(f, op, a::MathTypes) = f(a)
 
 for f in (:trunc, :floor, :round, :ceil, :eps, :bswap)
     @eval $f{T}(g::Gray{T}) = Gray{T}($f(gray(g)))
-    @eval @vectorize_1arg Gray $f
+    @eval Compat.@dep_vectorize_1arg Gray $f
 end
 eps{T}(::Type{Gray{T}}) = Gray(eps(T))
-@vectorize_1arg AbstractGray isfinite
-@vectorize_1arg AbstractGray isinf
-@vectorize_1arg AbstractGray isnan
-@vectorize_1arg AbstractGray abs
-@vectorize_1arg AbstractGray abs2
+Compat.@dep_vectorize_1arg AbstractGray isfinite
+Compat.@dep_vectorize_1arg AbstractGray isinf
+Compat.@dep_vectorize_1arg AbstractGray isnan
+Compat.@dep_vectorize_1arg AbstractGray abs
+Compat.@dep_vectorize_1arg AbstractGray abs2
 for f in (:trunc, :floor, :round, :ceil)
     @eval $f{T<:Integer}(::Type{T}, g::Gray) = Gray{T}($f(T, gray(g)))
     @eval $f{T<:Integer,G<:Gray,Ti}(::Type{T}, A::SparseMatrixCSC{G,Ti}) = error("not defined") # fix ambiguity warning
@@ -332,14 +332,14 @@ one{C<:Gray}(::Type{C}) = C(1)
 (.*){T<:Number}(b::AbstractGray, A::AbstractArray{T}) = mul(b, A)
 (./){C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray) = divd(A, b)
 
-Base.@vectorize_2arg Gray max
-Base.@vectorize_2arg Gray min
+Compat.@dep_vectorize_2arg Gray max
+Compat.@dep_vectorize_2arg Gray min
 for f in (:min, :max)
     @eval begin
-        ($f){T<:Gray}(x::Number, y::AbstractArray{T}) =
-            reshape([ ($f)(x, y[i]) for i in eachindex(y) ], size(y))
-        ($f){T<:Gray}(x::AbstractArray{T}, y::Number) =
-            reshape([ ($f)(x[i], y) for i in eachindex(x) ], size(x))
+        @deprecate($f{T<:Gray}(x::Number, y::AbstractArray{T}),
+                   @compat $f.(x, y))
+        @deprecate($f{T<:Gray}(x::AbstractArray{T}, y::Number),
+                   @compat $f.(x, y))
     end
 end
 

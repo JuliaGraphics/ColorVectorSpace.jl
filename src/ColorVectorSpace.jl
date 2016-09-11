@@ -69,7 +69,6 @@ Compat.@dep_vectorize_1arg AbstractGray abs
 Compat.@dep_vectorize_1arg AbstractGray abs2
 for f in (:trunc, :floor, :round, :ceil)
     @eval $f{T<:Integer}(::Type{T}, g::Gray) = Gray{T}($f(T, gray(g)))
-    @eval $f{T<:Integer,G<:Gray,Ti}(::Type{T}, A::SparseMatrixCSC{G,Ti}) = error("not defined") # fix ambiguity warning
 end
 
 for f in (:mod, :rem, :mod1)

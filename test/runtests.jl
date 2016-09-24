@@ -1,6 +1,6 @@
 module ColorVectorSpaceTests
 
-using FactCheck, Base.Test, ColorVectorSpace, ColorTypes, FixedPointNumbers, Compat
+using FactCheck, Base.Test, ColorVectorSpace, Colors, FixedPointNumbers, Compat
 
 macro test_colortype_approx_eq(a, b)
     :(test_colortype_approx_eq($(esc(a)), $(esc(b)), $(string(a)), $(string(b))))
@@ -303,6 +303,16 @@ facts("Colortypes") do
         a = ARGB{Float64}(1.0, 1.0, 1.0, 0.99)
         @fact isapprox(a, b, rtol = 0.01) --> false
         @fact isapprox(a, b, rtol = 0.1) --> true
+    end
+
+    context("dotc") do
+        @fact dotc(0.2, 0.2) --> 0.2^2
+        @fact dotc(0.2, 0.3f0) --> 0.2*0.3f0
+        @fact dotc(U8(0.2), U8(0.3)) --> Float32(U8(0.2))*Float32(U8(0.3))
+        @fact dotc(Gray{U8}(0.2), Gray24(0.3)) --> Float32(U8(0.2))*Float32(U8(0.3))
+        xc, yc = RGB(0.2,0.2,0.2), RGB{U8}(0.3,0.3,0.3)
+        @fact dotc(xc, yc) --> roughly(dotc(convert(Gray, xc), convert(Gray, yc)), 1e-6)
+        @fact dotc(RGB(1,0,0), RGB(0,1,1)) --> 0
     end
 end
 

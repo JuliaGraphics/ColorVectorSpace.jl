@@ -192,10 +192,10 @@ facts("Colortypes") do
         @fact 2.*cf --> ccmp
         @fact cf.*2 --> ccmp
         @fact cf/2.0f0 --> RGB{Float32}(0.05,0.1,0.15)
-        @fact cu/2 --> RGB(cu.r/2,cu.g/2,cu.b/2)
+        @fact cu/2 --> roughly(RGB(cu.r/2,cu.g/2,cu.b/2))
         @fact cu/0.5f0 --> RGB(cu.r/0.5f0, cu.g/0.5f0, cu.b/0.5f0)
         @fact cf+cf --> ccmp
-        @fact cu * 1//2 --> roughly(RGB{Float64}(U8(0.1)/2, U8(0.2)/2, U8(0.3)/2))
+        @fact cu * 1//2 --> mapc(x->Float64(Rational(x)/2), cu)
         @test_colortype_approx_eq (cf*[0.8f0])[1] RGB{Float32}(0.8*0.1,0.8*0.2,0.8*0.3)
         @test_colortype_approx_eq ([0.8f0]*cf)[1] RGB{Float32}(0.8*0.1,0.8*0.2,0.8*0.3)
         @test_colortype_approx_eq (cf.*[0.8f0])[1] RGB{Float32}(0.8*0.1,0.8*0.2,0.8*0.3)

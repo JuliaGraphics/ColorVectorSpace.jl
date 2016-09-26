@@ -38,6 +38,8 @@ facts("Colortypes") do
 
     context("Arithmetic with Gray") do
         cf = Gray{Float32}(0.1)
+        @fact +cf --> cf
+        @fact -cf --> Gray(-0.1f0)
         ccmp = Gray{Float32}(0.2)
         @fact 2*cf --> ccmp
         @fact cf*2 --> ccmp
@@ -148,6 +150,8 @@ facts("Colortypes") do
 
     context("Arithmetic with GrayA") do
         p1 = GrayA{Float32}(Gray(0.8), 0.2)
+        @fact +p1 --> p1
+        @fact -p1 --> GrayA(-0.8f0, -0.2f0)
         p2 = GrayA{Float32}(Gray(0.6), 0.3)
         @test_colortype_approx_eq p1+p2 GrayA{Float32}(Gray(1.4),0.5)
         @test_colortype_approx_eq (p1+p2)/2 GrayA{Float32}(Gray(0.7),0.25)
@@ -178,6 +182,8 @@ facts("Colortypes") do
 
     context("Arithemtic with RGB") do
         cf = RGB{Float32}(0.1,0.2,0.3)
+        @fact +cf --> cf
+        @fact -cf --> RGB(-0.1f0, -0.2f0, -0.3f0)
         ccmp = RGB{Float32}(0.2,0.4,0.6)
         @fact 2*cf --> ccmp
         @fact cf*2 --> ccmp
@@ -241,6 +247,8 @@ facts("Colortypes") do
 
     context("Arithemtic with RGBA") do
         cf = RGBA{Float32}(0.1,0.2,0.3,0.4)
+        @fact +cf --> cf
+        @fact -cf --> RGBA(-0.1f0, -0.2f0, -0.3f0, -0.4f0)
         ccmp = RGBA{Float32}(0.2,0.4,0.6,0.8)
         @fact 2*cf --> ccmp
         @fact cf*2 --> ccmp

@@ -117,6 +117,10 @@ color_rettype(c1::Colorant, c2::Colorant) = color_rettype(typeof(c1), typeof(c2)
 
 # Scalar RGB
 copy(c::AbstractRGB) = c
+(+)(c::AbstractRGB) = mapc(+, c)
+(+)(c::TransparentRGB) = mapc(+, c)
+(-)(c::AbstractRGB) = mapc(-, c)
+(-)(c::TransparentRGB) = mapc(-, c)
 (*)(f::Real, c::AbstractRGB) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c))
 (*)(f::Real, c::TransparentRGB) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c), f*alpha(c))
 function (*){T<:UFixed}(f::Real, c::AbstractRGB{T})

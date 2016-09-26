@@ -33,6 +33,8 @@ import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   besselj0, besselj1, bessely0, bessely1,
                   eta, zeta, digamma
 
+export dotc
+
 typealias AbstractGray{T} Color{T,1}
 typealias TransparentRGB{C<:AbstractRGB,T}   TransparentColor{C,T,4}
 typealias TransparentGray{C<:AbstractGray,T} TransparentColor{C,T,2}
@@ -78,6 +80,9 @@ end
 # Real values are treated like grays
 ColorTypes.gray(x::Real) = x
 
+dotc{T<:Real}(x::T, y::T) = acc(x)*acc(y)
+dotc(x::Real, y::Real) = dotc(promote(x, y)...)
+
 # Return types for arithmetic operations
 multype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)*zero(B)))
 sumtype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)+zero(B)))
@@ -90,6 +95,11 @@ powtype(a::Colorant, b::Colorant) = powtype(eltype(a),eltype(b))
 
 coltype{T<:Fractional}(::Type{T}) = T
 coltype{T}(::Type{T})             = Float64
+
+acctype{T<:FixedPoint}(::Type{T}) = FixedPointNumbers.floattype(T)
+acctype{T<:Number}(::Type{T}) = T
+
+acc(x::Number) = convert(acctype(typeof(x)), x)
 
 # Scalar binary RGB operations require the same RGB type for each element,
 # otherwise we don't know which to return
@@ -171,6 +181,11 @@ zero{C<:YCbCr}(::Type{C}) = C(0,0,0)
 zero{C<:HSV}(::Type{C}) = C(0,0,0)
 one(p::Colorant) = one(typeof(p))
 zero(p::Colorant) = zero(typeof(p))
+
+# These constants come from squaring the conversion to grayscale
+# (rec601 luma), and normalizing
+dotc{T<:AbstractRGB}(x::T, y::T) = 0.200f0 * acc(red(x))*acc(red(y)) + 0.771f0 * acc(green(x))*acc(green(y)) + 0.029f0 * acc(blue(x))*acc(blue(y))
+dotc(x::AbstractRGB, y::AbstractRGB) = dotc(promote(x, y)...)
 
 # Arrays
 (+){CV<:AbstractRGB}(A::AbstractArray{CV}, b::AbstractRGB) = (.+)(A, b)
@@ -315,7 +330,10 @@ zero{C<:Gray}(::Type{C}) = C(0)
 one{C<:TransparentGray}(::Type{C}) = C(1,1)
 one{C<:Gray}(::Type{C}) = C(1)
 
- # Arrays
+dotc{T<:AbstractGray}(x::T, y::T) = acc(gray(x))*acc(gray(y))
+dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
+
+# Arrays
 (+){CV<:AbstractGray}(A::AbstractArray{CV}, b::AbstractGray) = (.+)(A, b)
 (+){CV<:AbstractGray}(b::AbstractGray, A::AbstractArray{CV}) = (.+)(b, A)
 (-){CV<:AbstractGray}(A::AbstractArray{CV}, b::AbstractGray) = (.-)(A, b)

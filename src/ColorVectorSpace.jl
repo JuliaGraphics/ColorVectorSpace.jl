@@ -86,7 +86,7 @@ dotc(x::Real, y::Real) = dotc(promote(x, y)...)
 # Return types for arithmetic operations
 multype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)*zero(B)))
 sumtype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)+zero(B)))
-divtype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)/zero(B)))
+divtype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)/one(B)))
 powtype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)^zero(B)))
 multype(a::Colorant, b::Colorant) = multype(eltype(a),eltype(b))
 sumtype(a::Colorant, b::Colorant) = sumtype(eltype(a),eltype(b))

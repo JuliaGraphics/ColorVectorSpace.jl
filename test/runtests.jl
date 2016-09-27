@@ -238,6 +238,9 @@ facts("Colortypes") do
         @fact typeof(2*acf) --> Vector{RGB{Float32}}
         @fact typeof(convert(UInt8, 2)*acu) --> Vector{RGB{Float32}}
         @fact typeof(acu/2) --> Vector{RGB{typeof(U8(0.5)/2)}}
+        rcu = rand(RGB{U8}, 3, 5)
+        @fact @inferred(rcu./trues(3, 5)) --> rcu
+        @fact typeof(rcu./trues(3, 5)) --> Matrix{typeof(cu/true)}
 
         a = RGB{U8}[RGB(1,0,0), RGB(1,0.8,0)]
         @fact sum(a) --> RGB(2.0,0.8,0)

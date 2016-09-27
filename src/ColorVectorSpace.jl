@@ -460,8 +460,11 @@ end
 
 # To help type inference
 promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = base_colorant_type(C){Base.promote_array_type(F, T, eltype(C))}
-promote_op{C<:MathTypes,T<:Real}(F, ::Type{C}, ::Type{T}) = typeof(F(zero(C), zero(T)))
-promote_op{C<:MathTypes,T<:Real}(F, ::Type{T}, ::Type{C}) = typeof(F(zero(T), zero(C)))
+if VERSION < v"0.5.0-dev+1016"
+    Base.Broadcast.type_div{C<:MathTypes,T<:Real}(::Type{C}, ::Type{T}) = typeof(one(C)/one(T))
+    Base.Broadcast.type_div{C<:MathTypes,T<:Real}(::Type{T}, ::Type{C}) = typeof(one(T)/one(C))
+    Base.Broadcast.type_div{C1<:MathTypes,C2<:MathTypes}(::Type{C1}, ::Type{C2}) = typeof(one(C1)/one(C2))
+end
 promote_rule{C1<:Colorant,C2<:Colorant}(::Type{C1}, ::Type{C2}) = color_rettype(C1,C2){promote_type(eltype(C1), eltype(C2))}
 promote_rule{T<:Real,C<:AbstractGray}(::Type{T}, ::Type{C}) = promote_type(T, eltype(C))
 

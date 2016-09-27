@@ -77,6 +77,12 @@ facts("Colortypes") do
 
         acu = Gray{U8}[cu]
         acf = Gray{Float32}[cf]
+        @fact @inferred(acu./trues(1)) --> acu
+        @fact typeof(acu./trues(1)) --> Vector{typeof(cu/true)}
+        @fact @inferred(ones(Int, 1)./acu) --> [1/cu]
+        @fact typeof(ones(Int, 1)./acu) --> Vector{typeof(1/cu)}
+        @fact @inferred(acu./acu) --> [1]
+        @fact typeof(acu./acu) --> Vector{typeof(cu/cu)}
         @fact typeof(acu+acf) --> Vector{Gray{Float32}}
         @fact typeof(acu-acf) --> Vector{Gray{Float32}}
         @fact typeof(acu.+acf) --> Vector{Gray{Float32}}

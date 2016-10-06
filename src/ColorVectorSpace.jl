@@ -192,6 +192,8 @@ dotc{T<:AbstractRGB}(x::T, y::T) = 0.200f0 * acc(red(x))*acc(red(y)) + 0.771f0 *
 dotc(x::AbstractRGB, y::AbstractRGB) = dotc(promote(x, y)...)
 
 # Arrays
++{C<:MathTypes}(A::AbstractArray{C}) = A
+
 (+){CV<:AbstractRGB}(A::AbstractArray{CV}, b::AbstractRGB) = (.+)(A, b)
 (+){CV<:AbstractRGB}(b::AbstractRGB, A::AbstractArray{CV}) = (.+)(b, A)
 (-){CV<:AbstractRGB}(A::AbstractArray{CV}, b::AbstractRGB) = (.-)(A, b)

@@ -122,6 +122,8 @@ end
         a = Gray{U8}[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         @test histrange(a,10) == 0.1:0.1:1
 
+        @test typeof(float(Gray{UFixed16}(0.5))) <: AbstractFloat
+        @test_approx_eq quantile( Gray{UFixed16}[0.0,0.5,1.0], 0.1) 0.10000152590218968
     end
 
     @testset "Comparisons with Gray" begin

@@ -31,7 +31,7 @@ import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   gamma, lfact, frexp, modf, airy, airyai,
                   airyprime, airyaiprime, airybi, airybiprime,
                   besselj0, besselj1, bessely0, bessely1,
-                  eta, zeta, digamma
+                  eta, zeta, digamma, float
 
 export dotc
 
@@ -338,6 +338,8 @@ one{C<:Gray}(::Type{C}) = C(1)
 
 dotc{T<:AbstractGray}(x::T, y::T) = acc(gray(x))*acc(gray(y))
 dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
+
+float{T<:Gray}(::Type{T}) = typeof(float(zero(T)))
 
 # Arrays
 (+){CV<:AbstractGray}(A::AbstractArray{CV}, b::AbstractGray) = (.+)(A, b)

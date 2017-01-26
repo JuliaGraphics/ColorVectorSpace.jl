@@ -10,11 +10,7 @@ import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
     mod, rem, atan2, hypot, max, min, varm, real, histrange
 
-if VERSION < v"0.5.0-dev"
-    import Base.nan
-else
-    export nan
-end
+export nan
 
 # The unaryOps
 import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
@@ -40,15 +36,13 @@ typealias TransparentRGB{C<:AbstractRGB,T}   TransparentColor{C,T,4}
 typealias TransparentGray{C<:AbstractGray,T} TransparentColor{C,T,2}
 typealias TransparentRGBFloat{C<:AbstractRGB,T<:AbstractFloat} TransparentColor{C,T,4}
 typealias TransparentGrayFloat{C<:AbstractGray,T<:AbstractFloat} TransparentColor{C,T,2}
-typealias TransparentRGBUFixed{C<:AbstractRGB,T<:UFixed} TransparentColor{C,T,4}
-typealias TransparentGrayUFixed{C<:AbstractGray,T<:UFixed} TransparentColor{C,T,2}
+typealias TransparentRGBNormed{C<:AbstractRGB,T<:Normed} TransparentColor{C,T,4}
+typealias TransparentGrayNormed{C<:AbstractGray,T<:Normed} TransparentColor{C,T,2}
 
 typealias MathTypes{T,C} Union{AbstractRGB{T},TransparentRGB{C,T},AbstractGray{T},TransparentGray{C,T}}
 
 # convert(RGB{Float32}, NaN) doesn't and shouldn't work, so we need to reintroduce nan
-if VERSION >= v"0.5.0-dev"
-    nan{T<:AbstractFloat}(::Type{T}) = convert(T, NaN)
-end
+nan{T<:AbstractFloat}(::Type{T}) = convert(T, NaN)
 nan{C<:MathTypes}(::Type{C}) = _nan(eltype(C), C)
 _nan{T<:AbstractFloat,C<:AbstractGray}(::Type{T}, ::Type{C}) = (x = convert(T, NaN); C(x))
 _nan{T<:AbstractFloat,C<:TransparentGray}(::Type{T}, ::Type{C}) = (x = convert(T, NaN); C(x,x))
@@ -113,7 +107,7 @@ _color_rettype{C<:Colorant}(::Type{C}, ::Type{C}) = C
 color_rettype(c1::Colorant, c2::Colorant) = color_rettype(typeof(c1), typeof(c2))
 
 ## Math on Colors. These implementations encourage inlining and,
-## for the case of UFixed types, nearly halve the number of multiplications (for RGB)
+## for the case of Normed types, nearly halve the number of multiplications (for RGB)
 
 # Scalar RGB
 copy(c::AbstractRGB) = c
@@ -123,19 +117,19 @@ copy(c::AbstractRGB) = c
 (-)(c::TransparentRGB) = mapc(-, c)
 (*)(f::Real, c::AbstractRGB) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c))
 (*)(f::Real, c::TransparentRGB) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c), f*alpha(c))
-function (*){T<:UFixed}(f::Real, c::AbstractRGB{T})
+function (*){T<:Normed}(f::Real, c::AbstractRGB{T})
     fs = f*(1/reinterpret(one(T)))
     base_colorant_type(c){multype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
-function (*){T<:UFixed}(f::UFixed, c::AbstractRGB{T})
+function (*){T<:Normed}(f::Normed, c::AbstractRGB{T})
     fs = reinterpret(f)*(1/widen(reinterpret(one(T)))^2)
     base_colorant_type(c){multype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
-function (/){T<:UFixed}(c::AbstractRGB{T}, f::Real)
+function (/){T<:Normed}(c::AbstractRGB{T}, f::Real)
     fs = (one(f)/reinterpret(one(T)))/f
     base_colorant_type(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
-function (/){T<:UFixed}(c::AbstractRGB{T}, f::Integer)
+function (/){T<:Normed}(c::AbstractRGB{T}, f::Integer)
     fs = (1/reinterpret(one(T)))/f
     base_colorant_type(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
@@ -158,21 +152,21 @@ end
 (./)(c::AbstractRGB, f::Real) = (/)(c, f)
 (./)(c::TransparentRGB, f::Real) = (/)(c, f)
 
-isfinite{T<:UFixed}(c::Colorant{T}) = true
+isfinite{T<:Normed}(c::Colorant{T}) = true
 isfinite{T<:AbstractFloat}(c::AbstractRGB{T}) = isfinite(red(c)) && isfinite(green(c)) && isfinite(blue(c))
 isfinite(c::TransparentRGBFloat) = isfinite(red(c)) && isfinite(green(c)) && isfinite(blue(c)) && isfinite(alpha(c))
-isnan{T<:UFixed}(c::Colorant{T}) = false
+isnan{T<:Normed}(c::Colorant{T}) = false
 isnan{T<:AbstractFloat}(c::AbstractRGB{T}) = isnan(red(c)) || isnan(green(c)) || isnan(blue(c))
 isnan(c::TransparentRGBFloat) = isnan(red(c)) || isnan(green(c)) || isnan(blue(c)) || isnan(alpha(c))
-isinf{T<:UFixed}(c::Colorant{T}) = false
+isinf{T<:Normed}(c::Colorant{T}) = false
 isinf{T<:AbstractFloat}(c::AbstractRGB{T}) = isinf(red(c)) || isinf(green(c)) || isinf(blue(c))
 isinf(c::TransparentRGBFloat) = isinf(red(c)) || isinf(green(c)) || isinf(blue(c)) || isinf(alpha(c))
 abs(c::AbstractRGB) = abs(red(c))+abs(green(c))+abs(blue(c)) # should this have a different name?
-abs{T<:UFixed}(c::AbstractRGB{T}) = Float32(red(c))+Float32(green(c))+Float32(blue(c)) # should this have a different name?
+abs{T<:Normed}(c::AbstractRGB{T}) = Float32(red(c))+Float32(green(c))+Float32(blue(c)) # should this have a different name?
 abs(c::TransparentRGB) = abs(red(c))+abs(green(c))+abs(blue(c))+abs(alpha(c)) # should this have a different name?
-abs{T<:UFixed}(c::TransparentRGB{T}) = Float32(red(c))+Float32(green(c))+Float32(blue(c))+Float32(alpha(c)) # should this have a different name?
+abs{T<:Normed}(c::TransparentRGB{T}) = Float32(red(c))+Float32(green(c))+Float32(blue(c))+Float32(alpha(c)) # should this have a different name?
 abs2(c::AbstractRGB) = red(c)^2+green(c)^2+blue(c)^2
-abs2{T<:UFixed}(c::AbstractRGB{T}) = Float32(red(c))^2+Float32(green(c))^2+Float32(blue(c))^2
+abs2{T<:Normed}(c::AbstractRGB{T}) = Float32(red(c))^2+Float32(green(c))^2+Float32(blue(c))^2
 abs2(c::TransparentRGB) = (ret = abs2(color(c)); ret + convert(typeof(ret), alpha(c))^2)
 norm(c::AbstractRGB) = sqrt(abs2(c))
 norm(c::TransparentRGB) = sqrt(abs2(c))
@@ -297,11 +291,11 @@ isinf{T<:AbstractFloat}(c::AbstractGray{T}) = isinf(gray(c))
 isinf(c::TransparentGrayFloat) = isinf(gray(c)) && isnan(alpha(c))
 norm(c::AbstractGray) = abs(gray(c))
 abs(c::TransparentGray) = abs(gray(c))+abs(alpha(c)) # should this have a different name?
-abs(c::TransparentGrayUFixed) = Float32(gray(c)) + Float32(alpha(c)) # should this have a different name?
+abs(c::TransparentGrayNormed) = Float32(gray(c)) + Float32(alpha(c)) # should this have a different name?
 abs2(c::AbstractGray) = gray(c)^2
-abs2{T<:UFixed}(c::AbstractGray{T}) = Float32(gray(c))^2
+abs2{T<:Normed}(c::AbstractGray{T}) = Float32(gray(c))^2
 abs2(c::TransparentGray) = gray(c)^2+alpha(c)^2
-abs2(c::TransparentGrayUFixed) = Float32(gray(c))^2 + Float32(alpha(c))^2
+abs2(c::TransparentGrayNormed) = Float32(gray(c))^2 + Float32(alpha(c))^2
 atan2(x::Gray, y::Gray) = atan2(convert(Real, x), convert(Real, y))
 hypot(x::Gray, y::Gray) = hypot(convert(Real, x), convert(Real, y))
 norm(c::TransparentGray) = sqrt(abs2(c))
@@ -453,25 +447,9 @@ end
 #histrange for Gray type
 Base.histrange{T}(v::AbstractArray{Gray{T}}, n::Integer) = histrange(convert(Array{Float32}, map(gray, v)), n)
 
-# Promotions for reductions
-if VERSION < v"0.5.0-dev+3701"
-    Base.r_promote{T<:FixedPoint}(::Base.AddFun, c::MathTypes{T}) = convert(base_colorant_type(typeof(c)){Float64}, c)
-    Base.r_promote{T<:FixedPoint}(::Base.MulFun, c::MathTypes{T}) = convert(base_colorant_type(typeof(c)){Float64}, c)
-else
-    Base.r_promote{T<:FixedPoint}(::typeof(+), c::MathTypes{T}) = convert(base_colorant_type(typeof(c)){Float64}, c)
-    Base.r_promote{T<:FixedPoint}(::typeof(*), c::MathTypes{T}) = convert(base_colorant_type(typeof(c)){Float64}, c)
-end
-
 # To help type inference
 promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = base_colorant_type(C){Base.promote_array_type(F, T, eltype(C))}
-if VERSION < v"0.5.0-dev+1016"
-    Base.Broadcast.type_div{C<:MathTypes,T<:Real}(::Type{C}, ::Type{T}) = typeof(one(C)/one(T))
-    Base.Broadcast.type_div{C<:MathTypes,T<:Real}(::Type{T}, ::Type{C}) = typeof(one(T)/one(C))
-    Base.Broadcast.type_div{C1<:MathTypes,C2<:MathTypes}(::Type{C1}, ::Type{C2}) = typeof(one(C1)/one(C2))
-end
 promote_rule{C1<:Colorant,C2<:Colorant}(::Type{C1}, ::Type{C2}) = color_rettype(C1,C2){promote_type(eltype(C1), eltype(C2))}
 promote_rule{T<:Real,C<:AbstractGray}(::Type{T}, ::Type{C}) = promote_type(T, eltype(C))
-
-@deprecate sumsq abs2
 
 end

@@ -52,6 +52,7 @@ _nan{T<:AbstractFloat,C<:TransparentRGB}(::Type{T}, ::Type{C}) = (x = convert(T,
 ## Generic algorithms
 mapreduce(f, op::Union{typeof(@functorize(&)), typeof(@functorize(|))}, a::MathTypes) = f(a)  # ambiguity
 mapreduce(f, op, a::MathTypes) = f(a)
+Base.r_promote(::typeof(+), c::MathTypes) = mapc(x->Base.r_promote(+, x), c)
 
 for f in (:trunc, :floor, :round, :ceil, :eps, :bswap)
     @eval $f{T}(g::Gray{T}) = Gray{T}($f(gray(g)))

@@ -33,6 +33,6 @@ end
 
 using Images
 
-gridu8 = map(Clamp(RGB{U8}), grid)
+gridu8 = map(Clamp(RGB{N0f8}), grid)
 img = Image(gridu8, spatialorder=["x","y"])
 imwrite(img, "comparison.png")

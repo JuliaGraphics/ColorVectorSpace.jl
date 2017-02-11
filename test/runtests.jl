@@ -51,7 +51,7 @@ end
         @test eltype(2.0*cf) == Float64
         @test abs2(ccmp) == 0.2f0^2
         @test norm(cf) == 0.1f0
-        @test sumabs2(ccmp) == 0.2f0^2
+        @test sum(abs2, ccmp) == 0.2f0^2
         cu = Gray{N0f8}(0.1)
         @test 2*cu == Gray(2*cu.val)
         @test 2.0f0*cu == Gray(2.0f0*cu.val)
@@ -101,7 +101,7 @@ end
         @test (acf/Gray{Float32}(2))[1] ≈ 0.05f0
         @test (acu/2)[1] == Gray(gray(acu[1])/2)
         @test (acf/2)[1] ≈ Gray{Float32}(0.05f0)
-        @test sumabs2([cf,ccmp]) ≈ 0.05f0
+        @test sum(abs2, [cf, ccmp]) ≈ 0.05f0
 
         @test gray(0.8) == 0.8
 
@@ -113,10 +113,10 @@ end
         @test zero(ColorTypes.Gray) == 0
         @test one(ColorTypes.Gray) == 1
         a = Gray{N0f8}[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-        @test StatsBase.histrange(a,10) == 0.1:0.1:1
+        @test StatsBase.histrange(a,10) == 0.1f0:0.1f0:1f0
 
         @test typeof(float(Gray{N0f16}(0.5))) <: AbstractFloat
-        @test_approx_eq quantile( Gray{N0f16}[0.0,0.5,1.0], 0.1) 0.10000152590218968
+        @test quantile( Gray{N0f16}[0.0,0.5,1.0], 0.1) ≈ 0.10000152590218968
     end
 
     @testset "Comparisons with Gray" begin
@@ -226,7 +226,7 @@ end
         @test isinf(RGB(1, Inf, 0.5))
         @test !isnan(RGB(1, Inf, 0.5))
         @test abs(RGB(0.1,0.2,0.3)) ≈ 0.6
-        @test sumabs2(RGB(0.1,0.2,0.3)) ≈ 0.14
+        @test sum(abs2, RGB(0.1,0.2,0.3)) ≈ 0.14
         @test norm(RGB(0.1,0.2,0.3)) ≈ sqrt(0.14)
 
         acu = RGB{N0f8}[cu]

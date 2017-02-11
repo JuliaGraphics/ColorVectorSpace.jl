@@ -2,7 +2,8 @@ __precompile__(true)
 
 module ColorVectorSpace
 
-using ColorTypes, FixedPointNumbers, Compat, StatsBase
+using ColorTypes, FixedPointNumbers, Compat
+import StatsBase: histrange
 
 import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, .^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
@@ -327,9 +328,7 @@ function Base.isapprox{Cx<:MathTypes,Cy<:MathTypes}(x::AbstractArray{Cx},
 end
 
 zero{C<:TransparentGray}(::Type{C}) = C(0,0)
-zero{C<:Gray}(::Type{C}) = C(0)
 one{C<:TransparentGray}(::Type{C}) = C(1,1)
-one{C<:Gray}(::Type{C}) = C(1)
 
 dotc{T<:AbstractGray}(x::T, y::T) = acc(gray(x))*acc(gray(y))
 dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
@@ -446,7 +445,7 @@ function minus!{T,N}(out, b::Colorant, A::AbstractArray{T,N})
 end
 
 #histrange for Gray type
-StatsBase.histrange{T}(v::AbstractArray{Gray{T}}, n::Integer) = histrange(convert(Array{Float32}, map(gray, v)), n)
+histrange{T}(v::AbstractArray{Gray{T}}, n::Integer) = histrange(convert(Array{Float32}, map(gray, v)), n)
 
 # To help type inference
 promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = base_colorant_type(C){Base.promote_array_type(F, T, eltype(C))}

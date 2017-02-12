@@ -2,7 +2,7 @@ __precompile__(true)
 
 module ColorVectorSpace
 
-using ColorTypes, FixedPointNumbers, Compat
+using Colors, FixedPointNumbers, Compat
 import StatsBase: histrange
 
 import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, .^, <, ~
@@ -335,6 +335,15 @@ dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
 
 float{T<:Gray}(::Type{T}) = typeof(float(zero(T)))
 
+# Mixed types
+if VERSION < v"0.6.0-dev.2009"
+    (+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)
+    (-)(a::MathTypes, b::MathTypes) = (-)(promote(a, b)...)
+else
+    (+)(a::MathTypes, b::MathTypes) = (+)(Base.promote_noncircular(a, b)...)
+    (-)(a::MathTypes, b::MathTypes) = (-)(Base.promote_noncircular(a, b)...)
+end
+
 # Arrays
 (+){CV<:AbstractGray}(A::AbstractArray{CV}, b::AbstractGray) = (.+)(A, b)
 (+){CV<:AbstractGray}(b::AbstractGray, A::AbstractArray{CV}) = (.+)(b, A)
@@ -449,7 +458,6 @@ histrange{T}(v::AbstractArray{Gray{T}}, n::Integer) = histrange(convert(Array{Fl
 
 # To help type inference
 promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = base_colorant_type(C){Base.promote_array_type(F, T, eltype(C))}
-promote_rule{C1<:Colorant,C2<:Colorant}(::Type{C1}, ::Type{C2}) = color_rettype(C1,C2){promote_type(eltype(C1), eltype(C2))}
 promote_rule{T<:Real,C<:AbstractGray}(::Type{T}, ::Type{C}) = promote_type(T, eltype(C))
 
 end

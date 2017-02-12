@@ -326,6 +326,11 @@ end
         @test isapprox(a, b, rtol = 0.1)
     end
 
+    @testset "Mixed-type arithmetic" begin
+        @test RGB(1,0,0) + Gray(0.2f0) == RGB{Float32}(1.2,0.2,0.2)
+        @test RGB(1,0,0) - Gray(0.2f0) == RGB{Float32}(0.8,-0.2,-0.2)
+    end
+
     @testset "dotc" begin
         @test dotc(0.2, 0.2) == 0.2^2
         @test dotc(0.2, 0.3f0) == 0.2*0.3f0

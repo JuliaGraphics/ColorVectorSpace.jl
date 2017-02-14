@@ -32,15 +32,15 @@ import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
 
 export dotc
 
-typealias AbstractGray{T} Color{T,1}
-typealias TransparentRGB{C<:AbstractRGB,T}   TransparentColor{C,T,4}
-typealias TransparentGray{C<:AbstractGray,T} TransparentColor{C,T,2}
-typealias TransparentRGBFloat{C<:AbstractRGB,T<:AbstractFloat} TransparentColor{C,T,4}
-typealias TransparentGrayFloat{C<:AbstractGray,T<:AbstractFloat} TransparentColor{C,T,2}
-typealias TransparentRGBNormed{C<:AbstractRGB,T<:Normed} TransparentColor{C,T,4}
-typealias TransparentGrayNormed{C<:AbstractGray,T<:Normed} TransparentColor{C,T,2}
+@compat AbstractGray{T} = Color{T,1}
+@compat TransparentRGB{C<:AbstractRGB,T}   = TransparentColor{C,T,4}
+@compat TransparentGray{C<:AbstractGray,T} = TransparentColor{C,T,2}
+@compat TransparentRGBFloat{C<:AbstractRGB,T<:AbstractFloat} = TransparentColor{C,T,4}
+@compat TransparentGrayFloat{C<:AbstractGray,T<:AbstractFloat} = TransparentColor{C,T,2}
+@compat TransparentRGBNormed{C<:AbstractRGB,T<:Normed} = TransparentColor{C,T,4}
+@compat TransparentGrayNormed{C<:AbstractGray,T<:Normed} = TransparentColor{C,T,2}
 
-typealias MathTypes{T,C} Union{AbstractRGB{T},TransparentRGB{C,T},AbstractGray{T},TransparentGray{C,T}}
+@compat MathTypes{T,C} = Union{AbstractRGB{T},TransparentRGB{C,T},AbstractGray{T},TransparentGray{C,T}}
 
 # convert(RGB{Float32}, NaN) doesn't and shouldn't work, so we need to reintroduce nan
 nan{T<:AbstractFloat}(::Type{T}) = convert(T, NaN)

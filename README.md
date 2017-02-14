@@ -36,7 +36,7 @@ using ColorTypes, ColorVectorSpace
 That's it. Just by loading `ColorVectorSpace`, most basic mathematical
 operations will "just work" on `AbstractRGB`, `AbstractGray`
 (`OpaqueColor{T,1}`), `TransparentRGB`, and `TransparentGray` objects.
-(See `typealias` definitions for the latter inside of `ColorTypes`).
+(See definitions for the latter inside of `ColorTypes`).
 
 If you discover missing operations, please open an issue, or better
 yet submit a pull request.

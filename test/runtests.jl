@@ -340,7 +340,18 @@ end
         @test isapprox(dotc(xc, yc) , dotc(convert(Gray, xc), convert(Gray, yc)), atol=1e-6)
         @test dotc(RGB(1,0,0), RGB(0,1,1)) == 0
     end
-end
 
+    @testset "typemin/max" begin
+        for T in (Normed{UInt8,8}, Normed{UInt8,6}, Normed{UInt16,16}, Normed{UInt16,14}, Float32, Float64)
+            @test typemin(Gray{T}) === Gray{T}(typemin(T))
+            @test typemax(Gray{T}) === Gray{T}(typemax(T))
+            @test typemin(Gray{T}(0.5)) === Gray{T}(typemin(T))
+            @test typemax(Gray{T}(0.5)) === Gray{T}(typemax(T))
+            A = maximum(Gray{T}.([1 0 0; 0 1 0]), 1)  # see PR#44 discussion
+            @test isa(A, Matrix{Gray{T}})
+            @test size(A) == (1,3)
+        end
+    end
+end
 
 end

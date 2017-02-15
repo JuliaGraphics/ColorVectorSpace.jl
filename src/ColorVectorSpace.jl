@@ -9,7 +9,7 @@ import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, .^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     isnan, isless, length, mapreduce, norm, one, promote_array_type,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
-    mod, rem, atan2, hypot, max, min, varm, real
+    mod, rem, atan2, hypot, max, min, varm, real, typemin, typemax
 
 export nan
 
@@ -460,4 +460,6 @@ histrange{T}(v::AbstractArray{Gray{T}}, n::Integer) = histrange(convert(Array{Fl
 promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = base_colorant_type(C){Base.promote_array_type(F, T, eltype(C))}
 promote_rule{T<:Real,C<:AbstractGray}(::Type{T}, ::Type{C}) = promote_type(T, eltype(C))
 
+typemin{T<:ColorTypes.AbstractGray}(::Union{T,Type{T}}) = T(typemin(eltype(T)))
+typemax{T<:ColorTypes.AbstractGray}(::Union{T,Type{T}}) = T(typemax(eltype(T)))
 end

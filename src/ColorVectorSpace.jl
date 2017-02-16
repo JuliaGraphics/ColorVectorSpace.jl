@@ -5,7 +5,7 @@ module ColorVectorSpace
 using Colors, FixedPointNumbers, Compat
 import StatsBase: histrange
 
-import Base: ==, +, -, *, /, .+, .-, .*, ./, ^, .^, <, ~
+import Base: ==, +, -, *, /, ^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     isnan, isless, length, mapreduce, norm, one, promote_array_type,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
@@ -143,16 +143,10 @@ end
     color_rettype(a, b){sumtype(a,b)}(red(a)-red(b), green(a)-green(b), blue(a)-blue(b), alpha(a)-alpha(b))
 (*)(c::AbstractRGB, f::Real) = (*)(f, c)
 (*)(c::TransparentRGB, f::Real) = (*)(f, c)
-(.*)(f::Real, c::AbstractRGB) = (*)(f, c)
-(.*)(f::Real, c::TransparentRGB) = (*)(f, c)
-(.*)(c::AbstractRGB, f::Real) = (*)(f, c)
-(.*)(c::TransparentRGB, f::Real) = (*)(f, c)
 (/)(c::AbstractRGB, f::Real) = (one(f)/f)*c
 (/)(c::TransparentRGB, f::Real) = (one(f)/f)*c
 (/)(c::AbstractRGB, f::Integer) = (one(eltype(c))/f)*c
 (/)(c::TransparentRGB, f::Integer) = (one(eltype(c))/f)*c
-(./)(c::AbstractRGB, f::Real) = (/)(c, f)
-(./)(c::TransparentRGB, f::Real) = (/)(c, f)
 
 isfinite{T<:Normed}(c::Colorant{T}) = true
 isfinite{T<:AbstractFloat}(c::AbstractRGB{T}) = isfinite(red(c)) && isfinite(green(c)) && isfinite(blue(c))
@@ -187,35 +181,6 @@ zero(p::Colorant) = zero(typeof(p))
 dotc{T<:AbstractRGB}(x::T, y::T) = 0.200f0 * acc(red(x))*acc(red(y)) + 0.771f0 * acc(green(x))*acc(green(y)) + 0.029f0 * acc(blue(x))*acc(blue(y))
 dotc(x::AbstractRGB, y::AbstractRGB) = dotc(promote(x, y)...)
 
-# Arrays
-+{C<:MathTypes}(A::AbstractArray{C}) = A
-
-(+){CV<:AbstractRGB}(A::AbstractArray{CV}, b::AbstractRGB) = (.+)(A, b)
-(+){CV<:AbstractRGB}(b::AbstractRGB, A::AbstractArray{CV}) = (.+)(b, A)
-(-){CV<:AbstractRGB}(A::AbstractArray{CV}, b::AbstractRGB) = (.-)(A, b)
-(-){CV<:AbstractRGB}(b::AbstractRGB, A::AbstractArray{CV}) = (.-)(b, A)
-(*){T<:Number}(A::AbstractArray{T}, b::AbstractRGB) = A.*b
-(*){T<:Number}(b::AbstractRGB, A::AbstractArray{T}) = A.*b
-(.+){C<:AbstractRGB}(A::AbstractArray{C}, b::AbstractRGB) = plus(A, b)
-(.+){C<:AbstractRGB}(b::AbstractRGB, A::AbstractArray{C}) = plus(b, A)
-(.-){C<:AbstractRGB}(A::AbstractArray{C}, b::AbstractRGB) = minus(A, b)
-(.-){C<:AbstractRGB}(b::AbstractRGB, A::AbstractArray{C}) = minus(b, A)
-(.*){T<:Number}(A::AbstractArray{T}, b::AbstractRGB) = mul(A, b)
-(.*){T<:Number}(b::AbstractRGB, A::AbstractArray{T}) = mul(b, A)
-
-(+){CV<:TransparentRGB}(A::AbstractArray{CV}, b::TransparentRGB) = (.+)(A, b)
-(+){CV<:TransparentRGB}(b::TransparentRGB, A::AbstractArray{CV}) = (.+)(b, A)
-(-){CV<:TransparentRGB}(A::AbstractArray{CV}, b::TransparentRGB) = (.-)(A, b)
-(-){CV<:TransparentRGB}(b::TransparentRGB, A::AbstractArray{CV}) = (.-)(b, A)
-(*){T<:Number}(A::AbstractArray{T}, b::TransparentRGB) = A.*b
-(*){T<:Number}(b::TransparentRGB, A::AbstractArray{T}) = A.*b
-(.+){C<:TransparentRGB}(A::AbstractArray{C}, b::TransparentRGB) = plus(A, b)
-(.+){C<:TransparentRGB}(b::TransparentRGB, A::AbstractArray{C}) = plus(b, A)
-(.-){C<:TransparentRGB}(A::AbstractArray{C}, b::TransparentRGB) = minus(A, b)
-(.-){C<:TransparentRGB}(b::TransparentRGB, A::AbstractArray{C}) = minus(b, A)
-(.*){T<:Number}(A::AbstractArray{T}, b::TransparentRGB) = mul(A, b)
-(.*){T<:Number}(b::TransparentRGB, A::AbstractArray{T}) = mul(b, A)
-
 # Scalar Gray
 copy(c::AbstractGray) = c
 const unaryOps = (:~, :conj, :abs,
@@ -241,19 +206,12 @@ end
 (*)(f::Real, c::AbstractGray) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c))
 (*)(f::Real, c::TransparentGray) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c), f*alpha(c))
 (*)(c::AbstractGray, f::Real) = (*)(f, c)
-(.*)(f::Real, c::AbstractGray) = (*)(f, c)
-(.*)(c::AbstractGray, f::Real) = (*)(f, c)
 (*)(c::TransparentGray, f::Real) = (*)(f, c)
-(.*)(f::Real, c::TransparentGray) = (*)(f, c)
-(.*)(c::TransparentGray, f::Real) = (*)(f, c)
 (/)(c::AbstractGray, f::Real) = (one(f)/f)*c
 (/)(n::Number, c::AbstractGray) = n/gray(c)
 (/)(c::TransparentGray, f::Real) = (one(f)/f)*c
 (/)(c::AbstractGray, f::Integer) = (one(eltype(c))/f)*c
 (/)(c::TransparentGray, f::Integer) = (one(eltype(c))/f)*c
-(./)(c::AbstractGray, f::Real) = c/f
-(./)(n::Number, c::AbstractGray) = n/gray(c)
-(./)(c::TransparentGray, f::Real) = c/f
 (+){S,T}(a::AbstractGray{S}, b::AbstractGray{T}) = color_rettype(a,b){sumtype(S,T)}(gray(a)+gray(b))
 (+)(a::TransparentGray, b::TransparentGray) = color_rettype(a,b){sumtype(eltype(a),eltype(b))}(gray(a)+gray(b),alpha(a)+alpha(b))
 (-){S,T}(a::AbstractGray{S}, b::AbstractGray{T}) = color_rettype(a,b){sumtype(S,T)}(gray(a)-gray(b))
@@ -261,7 +219,6 @@ end
 (*){S,T}(a::AbstractGray{S}, b::AbstractGray{T}) = color_rettype(a,b){multype(S,T)}(gray(a)*gray(b))
 (^){S}(a::AbstractGray{S}, b::Integer) = base_colorant_type(a){powtype(S,Int)}(gray(a)^convert(Int,b))
 (^){S}(a::AbstractGray{S}, b::Real) = base_colorant_type(a){powtype(S,typeof(b))}(gray(a)^b)
-(.^){S}(a::AbstractGray{S}, b) = a^b
 (+)(c::AbstractGray) = c
 (+)(c::TransparentGray) = c
 (-)(c::AbstractGray) = typeof(c)(-gray(c))
@@ -272,10 +229,6 @@ div(a::AbstractGray, b::AbstractGray) = div(gray(a), gray(b))
 (-)(a::AbstractGray, b::Number) = gray(a)-b
 (+)(a::Number, b::AbstractGray) = a+gray(b)
 (-)(a::Number, b::AbstractGray) = a-gray(b)
-(.+)(a::AbstractGray, b::Number) = gray(a)+b
-(.-)(a::AbstractGray, b::Number) = gray(a)-b
-(.+)(a::Number, b::AbstractGray) = a+gray(b)
-(.-)(a::Number, b::AbstractGray) = a-gray(b)
 max{T<:AbstractGray}(a::T, b::T) = T(max(gray(a),gray(b)))
 max(a::AbstractGray, b::AbstractGray) = max(promote(a,b)...)
 max(a::Number, b::AbstractGray) = max(promote(a,b)...)
@@ -344,21 +297,11 @@ else
     (-)(a::MathTypes, b::MathTypes) = (-)(Base.promote_noncircular(a, b)...)
 end
 
-# Arrays
-(+){CV<:AbstractGray}(A::AbstractArray{CV}, b::AbstractGray) = (.+)(A, b)
-(+){CV<:AbstractGray}(b::AbstractGray, A::AbstractArray{CV}) = (.+)(b, A)
-(-){CV<:AbstractGray}(A::AbstractArray{CV}, b::AbstractGray) = (.-)(A, b)
-(-){CV<:AbstractGray}(b::AbstractGray, A::AbstractArray{CV}) = (.-)(b, A)
-(*){T<:Number}(A::AbstractArray{T}, b::AbstractGray) = A.*b
-(*){T<:Number}(b::AbstractGray, A::AbstractArray{T}) = A.*b
-(/){C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray) = A./b
-(.+){C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray) = plus(A, b)
-(.+){C<:AbstractGray}(b::AbstractGray, A::AbstractArray{C}) = plus(b, A)
-(.-){C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray) = minus(A, b)
-(.-){C<:AbstractGray}(b::AbstractGray, A::AbstractArray{C}) = minus(b, A)
-(.*){T<:Number}(A::AbstractArray{T}, b::AbstractGray) = mul(A, b)
-(.*){T<:Number}(b::AbstractGray, A::AbstractArray{T}) = mul(b, A)
-(./){C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray) = divd(A, b)
+if VERSION < v"0.6.0-dev.1839"
+    include("dots.jl")
+else
+    Base.Broadcast.eltypestuple(c::Colorant) = Tuple{typeof(c)}
+end
 
 Compat.@dep_vectorize_2arg Gray max
 Compat.@dep_vectorize_2arg Gray min
@@ -371,87 +314,41 @@ for f in (:min, :max)
     end
 end
 
+# Arrays
++{C<:MathTypes}(A::AbstractArray{C}) = A
+
+(+){CV<:AbstractRGB}(A::AbstractArray{CV}, b::AbstractRGB) = (.+)(A, b)
+(+){CV<:AbstractRGB}(b::AbstractRGB, A::AbstractArray{CV}) = (.+)(b, A)
+(-){CV<:AbstractRGB}(A::AbstractArray{CV}, b::AbstractRGB) = (.-)(A, b)
+(-){CV<:AbstractRGB}(b::AbstractRGB, A::AbstractArray{CV}) = (.-)(b, A)
+(*){T<:Number}(A::AbstractArray{T}, b::AbstractRGB) = A.*b
+(*){T<:Number}(b::AbstractRGB, A::AbstractArray{T}) = A.*b
+
+(+){CV<:TransparentRGB}(A::AbstractArray{CV}, b::TransparentRGB) = (.+)(A, b)
+(+){CV<:TransparentRGB}(b::TransparentRGB, A::AbstractArray{CV}) = (.+)(b, A)
+(-){CV<:TransparentRGB}(A::AbstractArray{CV}, b::TransparentRGB) = (.-)(A, b)
+(-){CV<:TransparentRGB}(b::TransparentRGB, A::AbstractArray{CV}) = (.-)(b, A)
+(*){T<:Number}(A::AbstractArray{T}, b::TransparentRGB) = A.*b
+(*){T<:Number}(b::TransparentRGB, A::AbstractArray{T}) = A.*b
+
+(+){CV<:AbstractGray}(A::AbstractArray{CV}, b::AbstractGray) = (.+)(A, b)
+(+){CV<:AbstractGray}(b::AbstractGray, A::AbstractArray{CV}) = (.+)(b, A)
+(-){CV<:AbstractGray}(A::AbstractArray{CV}, b::AbstractGray) = (.-)(A, b)
+(-){CV<:AbstractGray}(b::AbstractGray, A::AbstractArray{CV}) = (.-)(b, A)
+(*){T<:Number}(A::AbstractArray{T}, b::AbstractGray) = A.*b
+(*){T<:Number}(b::AbstractGray, A::AbstractArray{T}) = A.*b
+(/){C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray) = A./b
+
 (+){CV<:TransparentGray}(A::AbstractArray{CV}, b::TransparentGray) = (.+)(A, b)
 (+){CV<:TransparentGray}(b::TransparentGray, A::AbstractArray{CV}) = (.+)(b, A)
 (-){CV<:TransparentGray}(A::AbstractArray{CV}, b::TransparentGray) = (.-)(A, b)
 (-){CV<:TransparentGray}(b::TransparentGray, A::AbstractArray{CV}) = (.-)(b, A)
 (*){T<:Number}(A::AbstractArray{T}, b::TransparentGray) = A.*b
 (*){T<:Number}(b::TransparentGray, A::AbstractArray{T}) = A.*b
-(.+){C<:TransparentGray}(A::AbstractArray{C}, b::TransparentGray) = plus(A, b)
-(.+){C<:TransparentGray}(b::TransparentGray, A::AbstractArray{C}) = plus(b, A)
-(.-){C<:TransparentGray}(A::AbstractArray{C}, b::TransparentGray) = minus(A, b)
-(.-){C<:TransparentGray}(b::TransparentGray, A::AbstractArray{C}) = minus(b, A)
-(.*){T<:Number}(A::AbstractArray{T}, b::TransparentGray) = mul(A, b)
-(.*){T<:Number}(b::TransparentGray, A::AbstractArray{T}) = mul(b, A)
 
 varm{C<:AbstractGray}(v::AbstractArray{C}, s::AbstractGray; corrected::Bool=true) =
         varm(map(gray,v),gray(s); corrected=corrected)
 real{C<:AbstractGray}(::Type{C}) = real(eltype(C))
-
-# Called plus/minus instead of plus/sub because `sub` already has a meaning!
-function plus(A::AbstractArray, b::Colorant)
-    bT = convert(eltype(A), b)
-    out = similar(A)
-    plus!(out, A, bT)
-end
-plus(b::Colorant, A::AbstractArray) = plus(A, b)
-function minus(A::AbstractArray, b::Colorant)
-    bT = convert(eltype(A), b)
-    out = similar(A)
-    minus!(out, A, bT)
-end
-function minus(b::Colorant, A::AbstractArray)
-    bT = convert(eltype(A), b)
-    out = similar(A)
-    minus!(out, bT, A)
-end
-function mul{T<:Number}(A::AbstractArray{T}, b::Colorant)
-    bT = typeof(b*one(T))
-    out = similar(A, bT)
-    mul!(out, A, b)
-end
-mul{T<:Number}(b::Colorant, A::AbstractArray{T}) = mul(A, b)
-function divd{C<:AbstractGray}(A::AbstractArray{C}, b::AbstractGray)
-    bT = typeof(zero(C)/b)
-    out = similar(A, bT)
-    div!(out, A, b)
-end
-
-for (func, op) in ((:plus!, :+),
-                   (:minus!, :-),
-                   (:mul!, :*),
-                   (:div!, :/))
-    @eval begin
-        function $func{T,N}(out, A::AbstractArray{T,N}, b)
-            Rout, RA = eachindex(out), eachindex(A)
-            if Rout == RA
-                for I in RA
-                    @inbounds out[I] = $op(A[I], b)
-                end
-            else
-                for (Iout, IA) in zip(Rout, RA)
-                    @inbounds out[Iout] = $op(A[IA], b)
-                end
-            end
-            out
-        end
-    end
-end
-
-# This needs separate implementation because we can take -b of unsigned types
-function minus!{T,N}(out, b::Colorant, A::AbstractArray{T,N})
-    Rout, RA = eachindex(out), eachindex(A)
-    if Rout == RA
-        for I in RA
-            @inbounds out[I] = b - A[I]
-        end
-    else
-        for (Iout, IA) in zip(Rout, RA)
-            @inbounds out[Iout] = b - A[IA]
-        end
-    end
-    out
-end
 
 #histrange for Gray type
 histrange{T}(v::AbstractArray{Gray{T}}, n::Integer) = histrange(convert(Array{Float32}, map(gray, v)), n)

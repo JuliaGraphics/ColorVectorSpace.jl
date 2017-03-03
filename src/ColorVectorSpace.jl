@@ -239,6 +239,7 @@ min(a::Number, b::AbstractGray) = min(promote(a,b)...)
 min(a::AbstractGray, b::Number) = min(promote(a,b)...)
 
 isfinite{T<:AbstractFloat}(c::AbstractGray{T}) = isfinite(gray(c))
+isfinite{T<:Bool}(c::AbstractGray{T}) = isfinite(gray(c))
 isfinite(c::TransparentGrayFloat) = isfinite(gray(c)) && isfinite(alpha(c))
 isnan{T<:AbstractFloat}(c::AbstractGray{T}) = isnan(gray(c))
 isnan(c::TransparentGrayFloat) = isnan(gray(c)) && isnan(alpha(c))

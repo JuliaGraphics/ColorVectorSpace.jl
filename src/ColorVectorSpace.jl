@@ -348,6 +348,10 @@ histrange{T}(v::AbstractArray{Gray{T}}, n::Integer) = histrange(convert(Array{Fl
 promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = base_colorant_type(C){Base.promote_array_type(F, T, eltype(C))}
 promote_rule{T<:Real,C<:AbstractGray}(::Type{T}, ::Type{C}) = promote_type(T, eltype(C))
 
-typemin{T<:ColorTypes.AbstractGray}(::Union{T,Type{T}}) = T(typemin(eltype(T)))
-typemax{T<:ColorTypes.AbstractGray}(::Union{T,Type{T}}) = T(typemax(eltype(T)))
+typemin{T<:ColorTypes.AbstractGray}(::Type{T}) = T(typemin(eltype(T)))
+typemax{T<:ColorTypes.AbstractGray}(::Type{T}) = T(typemax(eltype(T)))
+
+typemin{T<:ColorTypes.AbstractGray}(::T) = T(typemin(eltype(T)))
+typemax{T<:ColorTypes.AbstractGray}(::T) = T(typemax(eltype(T)))
+
 end

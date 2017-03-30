@@ -66,6 +66,7 @@ end
         @test cu/0.5f0 == Gray(cu.val/0.5f0)
         @test cf+cf == ccmp
         @test isfinite(cf)
+        @test isfinite(Gray(true))
         @test !isinf(cf)
         @test !isnan(cf)
         @test !isfinite(Gray(NaN))

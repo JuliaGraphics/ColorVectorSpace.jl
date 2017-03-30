@@ -149,14 +149,11 @@ end
 (/)(c::TransparentRGB, f::Integer) = (one(eltype(c))/f)*c
 
 isfinite{T<:Normed}(c::Colorant{T}) = true
-isfinite{T<:AbstractFloat}(c::AbstractRGB{T}) = isfinite(red(c)) && isfinite(green(c)) && isfinite(blue(c))
-isfinite(c::TransparentRGBFloat) = isfinite(red(c)) && isfinite(green(c)) && isfinite(blue(c)) && isfinite(alpha(c))
+isfinite(c::Colorant) = mapreducec(isfinite, &, true, c)
 isnan{T<:Normed}(c::Colorant{T}) = false
-isnan{T<:AbstractFloat}(c::AbstractRGB{T}) = isnan(red(c)) || isnan(green(c)) || isnan(blue(c))
-isnan(c::TransparentRGBFloat) = isnan(red(c)) || isnan(green(c)) || isnan(blue(c)) || isnan(alpha(c))
+isnan(c::Colorant) = mapreducec(isnan, |, false, c)
 isinf{T<:Normed}(c::Colorant{T}) = false
-isinf{T<:AbstractFloat}(c::AbstractRGB{T}) = isinf(red(c)) || isinf(green(c)) || isinf(blue(c))
-isinf(c::TransparentRGBFloat) = isinf(red(c)) || isinf(green(c)) || isinf(blue(c)) || isinf(alpha(c))
+isinf(c::Colorant) = mapreducec(isinf, |, false, c)
 abs(c::AbstractRGB) = abs(red(c))+abs(green(c))+abs(blue(c)) # should this have a different name?
 abs{T<:Normed}(c::AbstractRGB{T}) = Float32(red(c))+Float32(green(c))+Float32(blue(c)) # should this have a different name?
 abs(c::TransparentRGB) = abs(red(c))+abs(green(c))+abs(blue(c))+abs(alpha(c)) # should this have a different name?
@@ -238,12 +235,6 @@ min(a::AbstractGray, b::AbstractGray) = min(promote(a,b)...)
 min(a::Number, b::AbstractGray) = min(promote(a,b)...)
 min(a::AbstractGray, b::Number) = min(promote(a,b)...)
 
-isfinite{T<:AbstractFloat}(c::AbstractGray{T}) = isfinite(gray(c))
-isfinite(c::TransparentGrayFloat) = isfinite(gray(c)) && isfinite(alpha(c))
-isnan{T<:AbstractFloat}(c::AbstractGray{T}) = isnan(gray(c))
-isnan(c::TransparentGrayFloat) = isnan(gray(c)) && isnan(alpha(c))
-isinf{T<:AbstractFloat}(c::AbstractGray{T}) = isinf(gray(c))
-isinf(c::TransparentGrayFloat) = isinf(gray(c)) && isnan(alpha(c))
 norm(c::AbstractGray) = abs(gray(c))
 abs(c::TransparentGray) = abs(gray(c))+abs(alpha(c)) # should this have a different name?
 abs(c::TransparentGrayNormed) = Float32(gray(c)) + Float32(alpha(c)) # should this have a different name?
@@ -357,6 +348,10 @@ histrange{T}(v::AbstractArray{Gray{T}}, n::Integer) = histrange(convert(Array{Fl
 promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = base_colorant_type(C){Base.promote_array_type(F, T, eltype(C))}
 promote_rule{T<:Real,C<:AbstractGray}(::Type{T}, ::Type{C}) = promote_type(T, eltype(C))
 
-typemin{T<:ColorTypes.AbstractGray}(::Union{T,Type{T}}) = T(typemin(eltype(T)))
-typemax{T<:ColorTypes.AbstractGray}(::Union{T,Type{T}}) = T(typemax(eltype(T)))
+typemin{T<:ColorTypes.AbstractGray}(::Type{T}) = T(typemin(eltype(T)))
+typemax{T<:ColorTypes.AbstractGray}(::Type{T}) = T(typemax(eltype(T)))
+
+typemin{T<:ColorTypes.AbstractGray}(::T) = T(typemin(eltype(T)))
+typemax{T<:ColorTypes.AbstractGray}(::T) = T(typemax(eltype(T)))
+
 end

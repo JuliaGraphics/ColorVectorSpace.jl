@@ -290,7 +290,7 @@ end
 
 if VERSION < v"0.6.0-dev.1839"
     include("dots.jl")
-else
+elseif VERSION < v"0.6.0-pre.beta.101"
     Base.Broadcast.eltypestuple(c::Colorant) = Tuple{typeof(c)}
 end
 

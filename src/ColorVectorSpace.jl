@@ -342,7 +342,7 @@ varm{C<:AbstractGray}(v::AbstractArray{C}, s::AbstractGray; corrected::Bool=true
 real{C<:AbstractGray}(::Type{C}) = real(eltype(C))
 
 #histrange for Gray type
-histrange{T}(v::AbstractArray{Gray{T}}, n::Integer) = histrange(convert(Array{Float32}, map(gray, v)), n)
+histrange{T}(v::AbstractArray{Gray{T}}, n::Integer) = histrange(convert(Array{Float32}, map(gray, v)), n, :right)
 
 # To help type inference
 promote_array_type{T<:Real,C<:MathTypes}(F, ::Type{T}, ::Type{C}) = base_colorant_type(C){Base.promote_array_type(F, T, eltype(C))}

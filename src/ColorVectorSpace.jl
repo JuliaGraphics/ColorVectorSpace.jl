@@ -51,7 +51,7 @@ _nan{T<:AbstractFloat,C<:AbstractRGB}(::Type{T}, ::Type{C}) = (x = convert(T, Na
 _nan{T<:AbstractFloat,C<:TransparentRGB}(::Type{T}, ::Type{C}) = (x = convert(T, NaN); C(x,x,x,x))
 
 ## Generic algorithms
-mapreduce(f, op::Union{typeof(@functorize(&)), typeof(@functorize(|))}, a::MathTypes) = f(a)  # ambiguity
+mapreduce(f, op::Union{typeof(&), typeof(|)}, a::MathTypes) = f(a)  # ambiguity
 mapreduce(f, op, a::MathTypes) = f(a)
 Base.r_promote(::typeof(+), c::MathTypes) = mapc(x->Base.r_promote(+, x), c)
 

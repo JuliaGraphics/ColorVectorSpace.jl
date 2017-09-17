@@ -118,6 +118,8 @@ end
 
         @test typeof(float(Gray{N0f16}(0.5))) <: AbstractFloat
         @test quantile( Gray{N0f16}[0.0,0.5,1.0], 0.1) ≈ 0.10000152590218968
+        @test middle(Gray(0.2)) === Gray(0.2)
+        @test middle(Gray(0.2), Gray(0.4)) === Gray((0.2+0.4)/2)
     end
 
     @testset "Comparisons with Gray" begin

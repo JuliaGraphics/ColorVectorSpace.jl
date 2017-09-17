@@ -28,7 +28,7 @@ import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   gamma, lfact, frexp, modf, airy, airyai,
                   airyprime, airyaiprime, airybi, airybiprime,
                   besselj0, besselj1, bessely0, bessely1,
-                  eta, zeta, digamma, float
+                  eta, zeta, digamma, float, middle
 
 export dotc
 
@@ -201,6 +201,9 @@ const unaryOps = (:~, :conj, :abs,
 for op in unaryOps
     @eval ($op)(c::AbstractGray) = $op(gray(c))
 end
+
+middle(c::AbstractGray) = base_colorant_type(c)(middle(gray(c)))
+middle(x::C, y::C) where {C<:AbstractGray} = C(middle(gray(x), gray(y)))
 
 (*)(f::Real, c::AbstractGray) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c))
 (*)(f::Real, c::TransparentGray) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c), f*alpha(c))

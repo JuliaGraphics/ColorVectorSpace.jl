@@ -120,6 +120,12 @@ end
         @test quantile( Gray{N0f16}[0.0,0.5,1.0], 0.1) ≈ 0.10000152590218968
         @test middle(Gray(0.2)) === Gray(0.2)
         @test middle(Gray(0.2), Gray(0.4)) === Gray((0.2+0.4)/2)
+
+        # issue #56
+        @test Gray24(0.8)*N0f8(0.5) === Gray{N0f8}(0.4)
+        @test Gray24(0.8)*0.5 === Gray(0.4)
+        @test Gray24(0.8)/2   === Gray(0.5f0*N0f8(0.8))
+        @test Gray24(0.8)/2.0 === Gray(0.4)
     end
 
     @testset "Comparisons with Gray" begin
@@ -195,6 +201,11 @@ end
         @test !isapprox(a, b, rtol = 0.01)
         @test isapprox(a, b, rtol = 0.1)
 
+        # issue #56
+        @test AGray32(0.8,0.2)*N0f8(0.5) === AGray{N0f8}(0.4,0.1)
+        @test AGray32(0.8,0.2)*0.5 === AGray(0.4,0.1)
+        @test AGray32(0.8,0.2)/2   === AGray(0.5f0*N0f8(0.8),0.5f0*N0f8(0.2))
+        @test AGray32(0.8,0.2)/2.0 === AGray(0.4,0.1)
     end
 
     @testset "Arithemtic with RGB" begin
@@ -265,6 +276,11 @@ end
         a = RGB{Float64}(1.0, 1.0, 0.99)
         @test !(isapprox(a, b, rtol = 0.01))
         @test isapprox(a, b, rtol = 0.1)
+        # issue #56
+        @test RGB24(1,0,0)*N0f8(0.5) === RGB{N0f8}(0.5,0,0)
+        @test RGB24(1,0,0)*0.5 === RGB(0.5,0,0)
+        @test RGB24(1,0,0)/2   === RGB(0.5f0,0,0)
+        @test RGB24(1,0,0)/2.0 === RGB(0.5,0,0)
     end
 
     @testset "Arithemtic with RGBA" begin
@@ -335,6 +351,11 @@ end
         a = ARGB{Float64}(1.0, 1.0, 1.0, 0.99)
         @test !(isapprox(a, b, rtol = 0.01))
         @test isapprox(a, b, rtol = 0.1)
+        # issue #56
+        @test ARGB32(1,0,0,0.8)*N0f8(0.5) === ARGB{N0f8}(0.5,0,0,0.4)
+        @test ARGB32(1,0,0,0.8)*0.5 === ARGB(0.5,0,0,0.4)
+        @test ARGB32(1,0,0,0.8)/2   === ARGB(0.5f0,0,0,0.5f0*N0f8(0.8))
+        @test ARGB32(1,0,0,0.8)/2.0 === ARGB(0.5,0,0,0.4)
     end
 
     @testset "Mixed-type arithmetic" begin

@@ -146,6 +146,8 @@ end
 
     @testset "Unary operations with Gray" begin
         for g in (Gray(0.4), Gray{N0f8}(0.4))
+            @test @inferred(zero(g)) === typeof(g)(0)
+            @test @inferred(oneunit(g)) === typeof(g)(1)
             for op in ColorVectorSpace.unaryOps
                 try
                     v = @eval $op(gray(g))  # if this fails, don't bother
@@ -161,6 +163,8 @@ end
 
     @testset "Arithmetic with GrayA" begin
         p1 = GrayA{Float32}(Gray(0.8), 0.2)
+        @test @inferred(zero(p1)) === GrayA{Float32}(0,0)
+        @test @inferred(oneunit(p1)) === GrayA{Float32}(1,1)
         @test +p1 == p1
         @test -p1 == GrayA(-0.8f0, -0.2f0)
         p2 = GrayA{Float32}(Gray(0.6), 0.3)
@@ -193,6 +197,8 @@ end
 
     @testset "Arithemtic with RGB" begin
         cf = RGB{Float32}(0.1,0.2,0.3)
+        @test @inferred(zero(cf)) === RGB{Float32}(0,0,0)
+        @test @inferred(oneunit(cf)) === RGB{Float32}(1,1,1)
         @test +cf == cf
         @test -cf == RGB(-0.1f0, -0.2f0, -0.3f0)
         ccmp = RGB{Float32}(0.2,0.4,0.6)
@@ -261,6 +267,8 @@ end
 
     @testset "Arithemtic with RGBA" begin
         cf = RGBA{Float32}(0.1,0.2,0.3,0.4)
+        @test @inferred(zero(cf)) === RGBA{Float32}(0,0,0,0)
+        @test @inferred(oneunit(cf)) === RGBA{Float32}(1,1,1,1)
         @test +cf == cf
         @test -cf == RGBA(-0.1f0, -0.2f0, -0.3f0, -0.4f0)
         ccmp = RGBA{Float32}(0.2,0.4,0.6,0.8)

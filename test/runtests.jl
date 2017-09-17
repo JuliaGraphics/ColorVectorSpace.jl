@@ -4,8 +4,6 @@ using ColorVectorSpace, Colors, FixedPointNumbers, Compat, StatsBase
 
 using Base.Test
 
-const use_broadcast_rules = VERSION >= v"0.6.0-dev.1839"
-
 macro test_colortype_approx_eq(a, b)
     :(test_colortype_approx_eq($(esc(a)), $(esc(b)), $(string(a)), $(string(b))))
 end
@@ -91,17 +89,10 @@ end
         @test typeof(acu-acf) == Vector{Gray{Float32}}
         @test typeof(acu.+acf) == Vector{Gray{Float32}}
         @test typeof(acu.-acf) == Vector{Gray{Float32}}
-        if use_broadcast_rules
-            @test typeof(acu+cf) == Vector{Gray{Float32}}
-            @test typeof(acu-cf) == Vector{Gray{Float32}}
-            @test typeof(acu.+cf) == Vector{Gray{Float32}}
-            @test typeof(acu.-cf) == Vector{Gray{Float32}}
-        else
-            @test typeof(acu+cf) == Vector{Gray{N0f8}}
-            @test typeof(acu-cf) == Vector{Gray{N0f8}}
-            @test typeof(acu.+cf) == Vector{Gray{N0f8}}
-            @test typeof(acu.-cf) == Vector{Gray{N0f8}}
-        end
+        @test typeof(acu+cf) == Vector{Gray{Float32}}
+        @test typeof(acu-cf) == Vector{Gray{Float32}}
+        @test typeof(acu.+cf) == Vector{Gray{Float32}}
+        @test typeof(acu.-cf) == Vector{Gray{Float32}}
         @test typeof(2*acf) == Vector{Gray{Float32}}
         @test typeof(2.*acf) == Vector{Gray{Float32}}
         @test typeof(0x02*acu) == Vector{Gray{Float32}}
@@ -245,17 +236,10 @@ end
         @test typeof(acu-acf) == Vector{RGB{Float32}}
         @test typeof(acu.+acf) == Vector{RGB{Float32}}
         @test typeof(acu.-acf) == Vector{RGB{Float32}}
-        if use_broadcast_rules
-            @test typeof(acu+cf) == Vector{RGB{Float32}}
-            @test typeof(acu-cf) == Vector{RGB{Float32}}
-            @test typeof(acu.+cf) == Vector{RGB{Float32}}
-            @test typeof(acu.-cf) == Vector{RGB{Float32}}
-        else
-            @test typeof(acu+cf) == Vector{RGB{N0f8}}
-            @test typeof(acu-cf) == Vector{RGB{N0f8}}
-            @test typeof(acu.+cf) == Vector{RGB{N0f8}}
-            @test typeof(acu.-cf) == Vector{RGB{N0f8}}
-        end
+        @test typeof(acu+cf) == Vector{RGB{Float32}}
+        @test typeof(acu-cf) == Vector{RGB{Float32}}
+        @test typeof(acu.+cf) == Vector{RGB{Float32}}
+        @test typeof(acu.-cf) == Vector{RGB{Float32}}
         @test typeof(2*acf) == Vector{RGB{Float32}}
         @test typeof(convert(UInt8, 2)*acu) == Vector{RGB{Float32}}
         @test typeof(acu/2) == Vector{RGB{typeof(N0f8(0.5)/2)}}
@@ -323,17 +307,10 @@ end
         @test typeof(acu-acf) == Vector{RGBA{Float32}}
         @test typeof(acu.+acf) == Vector{RGBA{Float32}}
         @test typeof(acu.-acf) == Vector{RGBA{Float32}}
-        if use_broadcast_rules
-            @test typeof(acu+cf) == Vector{RGBA{Float32}}
-            @test typeof(acu-cf) == Vector{RGBA{Float32}}
-            @test typeof(acu.+cf) == Vector{RGBA{Float32}}
-            @test typeof(acu.-cf) == Vector{RGBA{Float32}}
-        else
-            @test typeof(acu+cf) == Vector{RGBA{N0f8}}
-            @test typeof(acu-cf) == Vector{RGBA{N0f8}}
-            @test typeof(acu.+cf) == Vector{RGBA{N0f8}}
-            @test typeof(acu.-cf) == Vector{RGBA{N0f8}}
-        end
+        @test typeof(acu+cf) == Vector{RGBA{Float32}}
+        @test typeof(acu-cf) == Vector{RGBA{Float32}}
+        @test typeof(acu.+cf) == Vector{RGBA{Float32}}
+        @test typeof(acu.-cf) == Vector{RGBA{Float32}}
         @test typeof(2*acf) == Vector{RGBA{Float32}}
         @test typeof(convert(UInt8, 2)*acu) == Vector{RGBA{Float32}}
         @test typeof(acu/2) == Vector{RGBA{typeof(N0f8(0.5)/2)}}

@@ -280,19 +280,8 @@ dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
 float{T<:Gray}(::Type{T}) = typeof(float(zero(T)))
 
 # Mixed types
-if VERSION < v"0.6.0-dev.2009"
-    (+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)
-    (-)(a::MathTypes, b::MathTypes) = (-)(promote(a, b)...)
-else
-    (+)(a::MathTypes, b::MathTypes) = (+)(Base.promote_noncircular(a, b)...)
-    (-)(a::MathTypes, b::MathTypes) = (-)(Base.promote_noncircular(a, b)...)
-end
-
-if VERSION < v"0.6.0-dev.1839"
-    include("dots.jl")
-elseif VERSION < v"0.6.0-pre.beta.101"
-    Base.Broadcast.eltypestuple(c::Colorant) = Tuple{typeof(c)}
-end
+(+)(a::MathTypes, b::MathTypes) = (+)(Base.promote_noncircular(a, b)...)
+(-)(a::MathTypes, b::MathTypes) = (-)(Base.promote_noncircular(a, b)...)
 
 Compat.@dep_vectorize_2arg Gray max
 Compat.@dep_vectorize_2arg Gray min

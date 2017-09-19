@@ -4,8 +4,6 @@ using ColorVectorSpace, Colors, FixedPointNumbers, Compat, StatsBase
 
 using Base.Test
 
-const use_broadcast_rules = VERSION >= v"0.6.0-dev.1839"
-
 macro test_colortype_approx_eq(a, b)
     :(test_colortype_approx_eq($(esc(a)), $(esc(b)), $(string(a)), $(string(b))))
 end
@@ -91,17 +89,10 @@ end
         @test typeof(acu-acf) == Vector{Gray{Float32}}
         @test typeof(acu.+acf) == Vector{Gray{Float32}}
         @test typeof(acu.-acf) == Vector{Gray{Float32}}
-        if use_broadcast_rules
-            @test typeof(acu+cf) == Vector{Gray{Float32}}
-            @test typeof(acu-cf) == Vector{Gray{Float32}}
-            @test typeof(acu.+cf) == Vector{Gray{Float32}}
-            @test typeof(acu.-cf) == Vector{Gray{Float32}}
-        else
-            @test typeof(acu+cf) == Vector{Gray{N0f8}}
-            @test typeof(acu-cf) == Vector{Gray{N0f8}}
-            @test typeof(acu.+cf) == Vector{Gray{N0f8}}
-            @test typeof(acu.-cf) == Vector{Gray{N0f8}}
-        end
+        @test typeof(acu+cf) == Vector{Gray{Float32}}
+        @test typeof(acu-cf) == Vector{Gray{Float32}}
+        @test typeof(acu.+cf) == Vector{Gray{Float32}}
+        @test typeof(acu.-cf) == Vector{Gray{Float32}}
         @test typeof(2*acf) == Vector{Gray{Float32}}
         @test typeof(2.*acf) == Vector{Gray{Float32}}
         @test typeof(0x02*acu) == Vector{Gray{Float32}}
@@ -127,6 +118,14 @@ end
 
         @test typeof(float(Gray{N0f16}(0.5))) <: AbstractFloat
         @test quantile( Gray{N0f16}[0.0,0.5,1.0], 0.1) ≈ 0.10000152590218968
+        @test middle(Gray(0.2)) === Gray(0.2)
+        @test middle(Gray(0.2), Gray(0.4)) === Gray((0.2+0.4)/2)
+
+        # issue #56
+        @test Gray24(0.8)*N0f8(0.5) === Gray{N0f8}(0.4)
+        @test Gray24(0.8)*0.5 === Gray(0.4)
+        @test Gray24(0.8)/2   === Gray(0.5f0*N0f8(0.8))
+        @test Gray24(0.8)/2.0 === Gray(0.4)
     end
 
     @testset "Comparisons with Gray" begin
@@ -155,6 +154,8 @@ end
 
     @testset "Unary operations with Gray" begin
         for g in (Gray(0.4), Gray{N0f8}(0.4))
+            @test @inferred(zero(g)) === typeof(g)(0)
+            @test @inferred(oneunit(g)) === typeof(g)(1)
             for op in ColorVectorSpace.unaryOps
                 try
                     v = @eval $op(gray(g))  # if this fails, don't bother
@@ -170,6 +171,8 @@ end
 
     @testset "Arithmetic with GrayA" begin
         p1 = GrayA{Float32}(Gray(0.8), 0.2)
+        @test @inferred(zero(p1)) === GrayA{Float32}(0,0)
+        @test @inferred(oneunit(p1)) === GrayA{Float32}(1,1)
         @test +p1 == p1
         @test -p1 == GrayA(-0.8f0, -0.2f0)
         p2 = GrayA{Float32}(Gray(0.6), 0.3)
@@ -198,10 +201,17 @@ end
         @test !isapprox(a, b, rtol = 0.01)
         @test isapprox(a, b, rtol = 0.1)
 
+        # issue #56
+        @test AGray32(0.8,0.2)*N0f8(0.5) === AGray{N0f8}(0.4,0.1)
+        @test AGray32(0.8,0.2)*0.5 === AGray(0.4,0.1)
+        @test AGray32(0.8,0.2)/2   === AGray(0.5f0*N0f8(0.8),0.5f0*N0f8(0.2))
+        @test AGray32(0.8,0.2)/2.0 === AGray(0.4,0.1)
     end
 
     @testset "Arithemtic with RGB" begin
         cf = RGB{Float32}(0.1,0.2,0.3)
+        @test @inferred(zero(cf)) === RGB{Float32}(0,0,0)
+        @test @inferred(oneunit(cf)) === RGB{Float32}(1,1,1)
         @test +cf == cf
         @test -cf == RGB(-0.1f0, -0.2f0, -0.3f0)
         ccmp = RGB{Float32}(0.2,0.4,0.6)
@@ -245,17 +255,10 @@ end
         @test typeof(acu-acf) == Vector{RGB{Float32}}
         @test typeof(acu.+acf) == Vector{RGB{Float32}}
         @test typeof(acu.-acf) == Vector{RGB{Float32}}
-        if use_broadcast_rules
-            @test typeof(acu+cf) == Vector{RGB{Float32}}
-            @test typeof(acu-cf) == Vector{RGB{Float32}}
-            @test typeof(acu.+cf) == Vector{RGB{Float32}}
-            @test typeof(acu.-cf) == Vector{RGB{Float32}}
-        else
-            @test typeof(acu+cf) == Vector{RGB{N0f8}}
-            @test typeof(acu-cf) == Vector{RGB{N0f8}}
-            @test typeof(acu.+cf) == Vector{RGB{N0f8}}
-            @test typeof(acu.-cf) == Vector{RGB{N0f8}}
-        end
+        @test typeof(acu+cf) == Vector{RGB{Float32}}
+        @test typeof(acu-cf) == Vector{RGB{Float32}}
+        @test typeof(acu.+cf) == Vector{RGB{Float32}}
+        @test typeof(acu.-cf) == Vector{RGB{Float32}}
         @test typeof(2*acf) == Vector{RGB{Float32}}
         @test typeof(convert(UInt8, 2)*acu) == Vector{RGB{Float32}}
         @test typeof(acu/2) == Vector{RGB{typeof(N0f8(0.5)/2)}}
@@ -273,10 +276,17 @@ end
         a = RGB{Float64}(1.0, 1.0, 0.99)
         @test !(isapprox(a, b, rtol = 0.01))
         @test isapprox(a, b, rtol = 0.1)
+        # issue #56
+        @test RGB24(1,0,0)*N0f8(0.5) === RGB{N0f8}(0.5,0,0)
+        @test RGB24(1,0,0)*0.5 === RGB(0.5,0,0)
+        @test RGB24(1,0,0)/2   === RGB(0.5f0,0,0)
+        @test RGB24(1,0,0)/2.0 === RGB(0.5,0,0)
     end
 
     @testset "Arithemtic with RGBA" begin
         cf = RGBA{Float32}(0.1,0.2,0.3,0.4)
+        @test @inferred(zero(cf)) === RGBA{Float32}(0,0,0,0)
+        @test @inferred(oneunit(cf)) === RGBA{Float32}(1,1,1,1)
         @test +cf == cf
         @test -cf == RGBA(-0.1f0, -0.2f0, -0.3f0, -0.4f0)
         ccmp = RGBA{Float32}(0.2,0.4,0.6,0.8)
@@ -323,17 +333,10 @@ end
         @test typeof(acu-acf) == Vector{RGBA{Float32}}
         @test typeof(acu.+acf) == Vector{RGBA{Float32}}
         @test typeof(acu.-acf) == Vector{RGBA{Float32}}
-        if use_broadcast_rules
-            @test typeof(acu+cf) == Vector{RGBA{Float32}}
-            @test typeof(acu-cf) == Vector{RGBA{Float32}}
-            @test typeof(acu.+cf) == Vector{RGBA{Float32}}
-            @test typeof(acu.-cf) == Vector{RGBA{Float32}}
-        else
-            @test typeof(acu+cf) == Vector{RGBA{N0f8}}
-            @test typeof(acu-cf) == Vector{RGBA{N0f8}}
-            @test typeof(acu.+cf) == Vector{RGBA{N0f8}}
-            @test typeof(acu.-cf) == Vector{RGBA{N0f8}}
-        end
+        @test typeof(acu+cf) == Vector{RGBA{Float32}}
+        @test typeof(acu-cf) == Vector{RGBA{Float32}}
+        @test typeof(acu.+cf) == Vector{RGBA{Float32}}
+        @test typeof(acu.-cf) == Vector{RGBA{Float32}}
         @test typeof(2*acf) == Vector{RGBA{Float32}}
         @test typeof(convert(UInt8, 2)*acu) == Vector{RGBA{Float32}}
         @test typeof(acu/2) == Vector{RGBA{typeof(N0f8(0.5)/2)}}
@@ -348,6 +351,11 @@ end
         a = ARGB{Float64}(1.0, 1.0, 1.0, 0.99)
         @test !(isapprox(a, b, rtol = 0.01))
         @test isapprox(a, b, rtol = 0.1)
+        # issue #56
+        @test ARGB32(1,0,0,0.8)*N0f8(0.5) === ARGB{N0f8}(0.5,0,0,0.4)
+        @test ARGB32(1,0,0,0.8)*0.5 === ARGB(0.5,0,0,0.4)
+        @test ARGB32(1,0,0,0.8)/2   === ARGB(0.5f0,0,0,0.5f0*N0f8(0.8))
+        @test ARGB32(1,0,0,0.8)/2.0 === ARGB(0.5,0,0,0.4)
     end
 
     @testset "Mixed-type arithmetic" begin

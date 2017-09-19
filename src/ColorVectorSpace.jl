@@ -7,7 +7,7 @@ import StatsBase: histrange
 
 import Base: ==, +, -, *, /, ^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
-    isnan, isless, length, mapreduce, norm, one, promote_array_type,
+    isnan, isless, length, mapreduce, norm, oneunit, promote_array_type,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
     mod, rem, atan2, hypot, max, min, varm, real, typemin, typemax
 
@@ -28,7 +28,7 @@ import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   gamma, lfact, frexp, modf, airy, airyai,
                   airyprime, airyaiprime, airybi, airybiprime,
                   besselj0, besselj1, bessely0, bessely1,
-                  eta, zeta, digamma, float
+                  eta, zeta, digamma, float, middle
 
 export dotc
 
@@ -82,7 +82,7 @@ dotc(x::Real, y::Real) = dotc(promote(x, y)...)
 # Return types for arithmetic operations
 multype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)*zero(B)))
 sumtype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)+zero(B)))
-divtype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)/one(B)))
+divtype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)/oneunit(B)))
 powtype{A,B}(::Type{A}, ::Type{B}) = coltype(typeof(zero(A)^zero(B)))
 multype(a::Colorant, b::Colorant) = multype(eltype(a),eltype(b))
 sumtype(a::Colorant, b::Colorant) = sumtype(eltype(a),eltype(b))
@@ -108,6 +108,13 @@ _color_rettype{C<:Colorant}(::Type{C}, ::Type{C}) = C
 
 color_rettype(c1::Colorant, c2::Colorant) = color_rettype(typeof(c1), typeof(c2))
 
+arith_colorant_type(::C) where {C<:Colorant} = arith_colorant_type(C)
+arith_colorant_type(::Type{C}) where {C<:Colorant} = base_colorant_type(C)
+arith_colorant_type(::Type{Gray24}) = Gray
+arith_colorant_type(::Type{AGray32}) = AGray
+arith_colorant_type(::Type{RGB24}) = RGB
+arith_colorant_type(::Type{ARGB32}) = ARGB
+
 ## Math on Colors. These implementations encourage inlining and,
 ## for the case of Normed types, nearly halve the number of multiplications (for RGB)
 
@@ -117,23 +124,23 @@ copy(c::AbstractRGB) = c
 (+)(c::TransparentRGB) = mapc(+, c)
 (-)(c::AbstractRGB) = mapc(-, c)
 (-)(c::TransparentRGB) = mapc(-, c)
-(*)(f::Real, c::AbstractRGB) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c))
-(*)(f::Real, c::TransparentRGB) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c), f*alpha(c))
+(*)(f::Real, c::AbstractRGB) = arith_colorant_type(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c))
+(*)(f::Real, c::TransparentRGB) = arith_colorant_type(c){multype(typeof(f),eltype(c))}(f*red(c), f*green(c), f*blue(c), f*alpha(c))
 function (*){T<:Normed}(f::Real, c::AbstractRGB{T})
-    fs = f*(1/reinterpret(one(T)))
-    base_colorant_type(c){multype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
+    fs = f*(1/reinterpret(oneunit(T)))
+    arith_colorant_type(c){multype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
 function (*){T<:Normed}(f::Normed, c::AbstractRGB{T})
-    fs = reinterpret(f)*(1/widen(reinterpret(one(T)))^2)
-    base_colorant_type(c){multype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
+    fs = reinterpret(f)*(1/widen(reinterpret(oneunit(T)))^2)
+    arith_colorant_type(c){multype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
 function (/){T<:Normed}(c::AbstractRGB{T}, f::Real)
-    fs = (one(f)/reinterpret(one(T)))/f
-    base_colorant_type(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
+    fs = (one(f)/reinterpret(oneunit(T)))/f
+    arith_colorant_type(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
 function (/){T<:Normed}(c::AbstractRGB{T}, f::Integer)
-    fs = (1/reinterpret(one(T)))/f
-    base_colorant_type(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
+    fs = (1/reinterpret(oneunit(T)))/f
+    arith_colorant_type(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
 (+){S,T}(a::AbstractRGB{S}, b::AbstractRGB{T}) = color_rettype(a, b){sumtype(S,T)}(red(a)+red(b), green(a)+green(b), blue(a)+blue(b))
 (-){S,T}(a::AbstractRGB{S}, b::AbstractRGB{T}) = color_rettype(a, b){sumtype(S,T)}(red(a)-red(b), green(a)-green(b), blue(a)-blue(b))
@@ -164,13 +171,15 @@ abs2(c::TransparentRGB) = (ret = abs2(color(c)); ret + convert(typeof(ret), alph
 norm(c::AbstractRGB) = sqrt(abs2(c))
 norm(c::TransparentRGB) = sqrt(abs2(c))
 
-one{C<:AbstractRGB}(::Type{C})     = C(1,1,1)
-one{C<:TransparentRGB}(::Type{C})  = C(1,1,1,1)
+oneunit{C<:AbstractRGB}(::Type{C})     = C(1,1,1)
+oneunit{C<:TransparentRGB}(::Type{C})  = C(1,1,1,1)
+
 zero{C<:AbstractRGB}(::Type{C})    = C(0,0,0)
 zero{C<:TransparentRGB}(::Type{C}) = C(0,0,0,0)
 zero{C<:YCbCr}(::Type{C}) = C(0,0,0)
 zero{C<:HSV}(::Type{C}) = C(0,0,0)
-one(p::Colorant) = one(typeof(p))
+oneunit(p::Colorant) = oneunit(typeof(p))
+Base.one(c::Colorant) = Base.one(typeof(c))
 zero(p::Colorant) = zero(typeof(p))
 
 # These constants come from squaring the conversion to grayscale
@@ -200,8 +209,11 @@ for op in unaryOps
     @eval ($op)(c::AbstractGray) = $op(gray(c))
 end
 
-(*)(f::Real, c::AbstractGray) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c))
-(*)(f::Real, c::TransparentGray) = base_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c), f*alpha(c))
+middle(c::AbstractGray) = arith_colorant_type(c)(middle(gray(c)))
+middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(x), gray(y)))
+
+(*)(f::Real, c::AbstractGray) = arith_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c))
+(*)(f::Real, c::TransparentGray) = arith_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c), f*alpha(c))
 (*)(c::AbstractGray, f::Real) = (*)(f, c)
 (*)(c::TransparentGray, f::Real) = (*)(f, c)
 (/)(c::AbstractGray, f::Real) = (one(f)/f)*c
@@ -214,8 +226,8 @@ end
 (-){S,T}(a::AbstractGray{S}, b::AbstractGray{T}) = color_rettype(a,b){sumtype(S,T)}(gray(a)-gray(b))
 (-)(a::TransparentGray, b::TransparentGray) = color_rettype(a,b){sumtype(eltype(a),eltype(b))}(gray(a)-gray(b),alpha(a)-alpha(b))
 (*){S,T}(a::AbstractGray{S}, b::AbstractGray{T}) = color_rettype(a,b){multype(S,T)}(gray(a)*gray(b))
-(^){S}(a::AbstractGray{S}, b::Integer) = base_colorant_type(a){powtype(S,Int)}(gray(a)^convert(Int,b))
-(^){S}(a::AbstractGray{S}, b::Real) = base_colorant_type(a){powtype(S,typeof(b))}(gray(a)^b)
+(^){S}(a::AbstractGray{S}, b::Integer) = arith_colorant_type(a){powtype(S,Int)}(gray(a)^convert(Int,b))
+(^){S}(a::AbstractGray{S}, b::Real) = arith_colorant_type(a){powtype(S,typeof(b))}(gray(a)^b)
 (+)(c::AbstractGray) = c
 (+)(c::TransparentGray) = c
 (-)(c::AbstractGray) = typeof(c)(-gray(c))
@@ -272,7 +284,7 @@ function Base.isapprox{Cx<:MathTypes,Cy<:MathTypes}(x::AbstractArray{Cx},
 end
 
 zero{C<:TransparentGray}(::Type{C}) = C(0,0)
-one{C<:TransparentGray}(::Type{C}) = C(1,1)
+oneunit{C<:TransparentGray}(::Type{C}) = C(1,1)
 
 dotc{T<:AbstractGray}(x::T, y::T) = acc(gray(x))*acc(gray(y))
 dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
@@ -280,30 +292,11 @@ dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
 float{T<:Gray}(::Type{T}) = typeof(float(zero(T)))
 
 # Mixed types
-if VERSION < v"0.6.0-dev.2009"
-    (+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)
-    (-)(a::MathTypes, b::MathTypes) = (-)(promote(a, b)...)
-else
-    (+)(a::MathTypes, b::MathTypes) = (+)(Base.promote_noncircular(a, b)...)
-    (-)(a::MathTypes, b::MathTypes) = (-)(Base.promote_noncircular(a, b)...)
-end
-
-if VERSION < v"0.6.0-dev.1839"
-    include("dots.jl")
-elseif VERSION < v"0.6.0-pre.beta.101"
-    Base.Broadcast.eltypestuple(c::Colorant) = Tuple{typeof(c)}
-end
+(+)(a::MathTypes, b::MathTypes) = (+)(Base.promote_noncircular(a, b)...)
+(-)(a::MathTypes, b::MathTypes) = (-)(Base.promote_noncircular(a, b)...)
 
 Compat.@dep_vectorize_2arg Gray max
 Compat.@dep_vectorize_2arg Gray min
-for f in (:min, :max)
-    @eval begin
-        @deprecate($f{T<:Gray}(x::Number, y::AbstractArray{T}),
-                   @compat $f.(x, y))
-        @deprecate($f{T<:Gray}(x::AbstractArray{T}, y::Number),
-                   @compat $f.(x, y))
-    end
-end
 
 # Arrays
 +{C<:MathTypes}(A::AbstractArray{C}) = A
@@ -353,5 +346,19 @@ typemax{T<:ColorTypes.AbstractGray}(::Type{T}) = T(typemax(eltype(T)))
 
 typemin{T<:ColorTypes.AbstractGray}(::T) = T(typemin(eltype(T)))
 typemax{T<:ColorTypes.AbstractGray}(::T) = T(typemax(eltype(T)))
+
+# deprecations
+function Base.one(::Type{C}) where {C<:Union{TransparentGray,AbstractRGB,TransparentRGB}}
+    Base.depwarn("one($C) will soon switch to returning 1; you might need to switch to `oneunit`", :one)
+    C(_onetuple(C)...)
+end
+_onetuple(::Type{C}) where {C<:Colorant{T,N}} where {T,N} = ntuple(d->1, Val(N))
+
+for f in (:min, :max)
+    @eval begin
+        @deprecate($f{T<:Gray}(x::Number, y::AbstractArray{T}), $f.(x, y))
+        @deprecate($f{T<:Gray}(x::AbstractArray{T}, y::Number), $f.(x, y))
+    end
+end
 
 end

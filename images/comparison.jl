@@ -1,9 +1,9 @@
 using Colors
 
-Base.mean{C<:Color}(c1::C,c2::C) = convert(C, (convert(XYZ, c1) + convert(XYZ, c2))/2)  # colorimetrically "proper"
+Base.mean(c1::C,c2::C) where {C<:Color} = convert(C, (convert(XYZ, c1) + convert(XYZ, c2))/2)  # colorimetrically "proper"
 
 # RGB linear vector space averaging
-function meanrgb{C<:AbstractRGB}(c1::C, c2::C)
+function meanrgb(c1::C, c2::C) where C<:AbstractRGB
     C((red(c1)+red(c2))/2,
       (green(c1)+green(c2))/2,
       (blue(c1)+blue(c2))/2)

@@ -21,7 +21,7 @@ end
 @testset "Colortypes" begin
 
     @testset "nan" begin
-        function make_checked_nan{T}(::Type{T})
+        function make_checked_nan(::Type{T}) where T
             x = nan(T)
             isa(x, T) && isnan(x)
         end

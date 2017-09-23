@@ -112,7 +112,7 @@ end
         @test isapprox(a, a)
         @test real(Gray{Float32}) <: Real
         @test zero(ColorTypes.Gray) == 0
-        @test one(ColorTypes.Gray) == 1
+        @test oneunit(ColorTypes.Gray) == 1
         a = Gray{N0f8}[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         @test StatsBase.histrange(a,10) == 0.1f0:0.1f0:1f0
 

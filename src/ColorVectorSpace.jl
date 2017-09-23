@@ -264,14 +264,10 @@ norm(c::TransparentGray) = sqrt(abs2(c))
 isless(g1::AbstractGray, g2::AbstractGray) = isless(gray(g1), gray(g2))
 isless(c::AbstractGray, r::Real) = isless(gray(c), r)
 isless(r::Real, c::AbstractGray) = isless(r, gray(c))
-Base.isapprox(x::AbstractGray, y::AbstractGray; kwargs...) = isapprox(gray(x), gray(y); kwargs...)
-Base.isapprox(x::TransparentGray, y::TransparentGray; kwargs...) = isapprox(gray(x), gray(y); kwargs...) && isapprox(alpha(x), alpha(y); kwargs...)
-Base.isapprox(x::AbstractRGB, y::AbstractRGB; kwargs...) = isapprox(red(x), red(y); kwargs...) && isapprox(green(x), green(y); kwargs...) && isapprox(blue(x), blue(y); kwargs...)
-Base.isapprox(x::TransparentRGB, y::TransparentRGB; kwargs...) = isapprox(alpha(x), alpha(y); kwargs...) && isapprox(red(x), red(y); kwargs...) && isapprox(green(x), green(y); kwargs...) && isapprox(blue(x), blue(y); kwargs...)
 
 function Base.isapprox{Cx<:MathTypes,Cy<:MathTypes}(x::AbstractArray{Cx},
                                                     y::AbstractArray{Cy};
-                                                    rtol::Real=Base.rtoldefault(eltype(Cx),eltype(Cy)),
+                                                    rtol::Real=Base.rtoldefault(eltype(Cx),eltype(Cy),0),
                                                     atol::Real=0,
                                                     norm::Function=vecnorm)
     d = norm(x - y)

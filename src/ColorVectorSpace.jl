@@ -2,7 +2,7 @@ __precompile__(true)
 
 module ColorVectorSpace
 
-using Colors, FixedPointNumbers, Compat
+using Colors, FixedPointNumbers, SpecialFunctions, Compat
 import StatsBase: histrange
 
 import Base: ==, +, -, *, /, ^, <, ~
@@ -22,13 +22,10 @@ import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   sind, tand, acosd, acotd, acscd, asecd,
                   asind, atand, rad2deg, deg2rad,
                   log, log2, log10, log1p, exponent, exp,
-                  exp2, expm1, cbrt, sqrt, erf,
-                  erfc, erfcx, erfi, dawson,
+                  exp2, expm1, cbrt, sqrt,
                   significand, lgamma,
-                  gamma, lfact, frexp, modf, airy, airyai,
-                  airyprime, airyaiprime, airybi, airybiprime,
-                  besselj0, besselj1, bessely0, bessely1,
-                  eta, zeta, digamma, float, middle
+                  gamma, lfact, frexp, modf,
+                  float, middle
 
 export dotc
 
@@ -53,7 +50,11 @@ _nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:TransparentRGB} = (x = con
 ## Generic algorithms
 mapreduce(f, op::Union{typeof(&), typeof(|)}, a::MathTypes) = f(a)  # ambiguity
 mapreduce(f, op, a::MathTypes) = f(a)
-Base.r_promote(::typeof(+), c::MathTypes) = mapc(x->Base.r_promote(+, x), c)
+if isdefined(Base, :r_promote)
+    Base.r_promote(::typeof(+), c::MathTypes) = mapc(x->Base.r_promote(+, x), c)
+else
+    Base.promote_sys_size_add(c::MathTypes) = mapc(Base.promote_sys_size_add, c)
+end
 
 for f in (:trunc, :floor, :round, :ceil, :eps, :bswap)
     @eval $f(g::Gray{T}) where {T} = Gray{T}($f(gray(g)))
@@ -198,13 +199,15 @@ const unaryOps = (:~, :conj, :abs,
                   :sind, :tand, :acosd, :acotd, :acscd, :asecd,
                   :asind, :atand, :rad2deg, :deg2rad,
                   :log, :log2, :log10, :log1p, :exponent, :exp,
-                  :exp2, :expm1, :cbrt, :sqrt, :erf,
-                  :erfc, :erfcx, :erfi, :dawson,
+                  :exp2, :expm1, :cbrt, :sqrt,
                   :significand, :lgamma,
-                  :gamma, :lfact, :frexp, :modf, :airy, :airyai,
-                  :airyprime, :airyaiprime, :airybi, :airybiprime,
-                  :besselj0, :besselj1, :bessely0, :bessely1,
-                  :eta, :zeta, :digamma)
+                  :gamma, :lfact, :frexp, :modf,
+                  :(SpecialFunctions.erf), :(SpecialFunctions.erfc),
+                  :(SpecialFunctions.erfcx), :(SpecialFunctions.erfi), :(SpecialFunctions.dawson),
+                  :(SpecialFunctions.airy), :(SpecialFunctions.airyai),
+                  :(SpecialFunctions.airyprime), :(SpecialFunctions.airyaiprime), :(SpecialFunctions.airybi), :(SpecialFunctions.airybiprime),
+                  :(SpecialFunctions.besselj0), :(SpecialFunctions.besselj1), :(SpecialFunctions.bessely0), :(SpecialFunctions.bessely1),
+                  :(SpecialFunctions.eta), :(SpecialFunctions.zeta), :(SpecialFunctions.digamma))
 for op in unaryOps
     @eval ($op)(c::AbstractGray) = $op(gray(c))
 end
@@ -288,8 +291,13 @@ dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
 float(::Type{T}) where {T<:Gray} = typeof(float(zero(T)))
 
 # Mixed types
-(+)(a::MathTypes, b::MathTypes) = (+)(Base.promote_noncircular(a, b)...)
-(-)(a::MathTypes, b::MathTypes) = (-)(Base.promote_noncircular(a, b)...)
+if VERSION < v"0.7.0-DEV.2138"
+    (+)(a::MathTypes, b::MathTypes) = (+)(Base.promote_noncircular(a, b)...)
+    (-)(a::MathTypes, b::MathTypes) = (-)(Base.promote_noncircular(a, b)...)
+else
+    (+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)
+    (-)(a::MathTypes, b::MathTypes) = (-)(promote(a, b)...)
+end
 
 Compat.@dep_vectorize_2arg Gray max
 Compat.@dep_vectorize_2arg Gray min

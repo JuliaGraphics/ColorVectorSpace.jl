@@ -4,3 +4,4 @@ ColorTypes 0.6.3
 FixedPointNumbers 0.3.0
 StatsBase 0.8.2
 Compat 0.18.0
+SpecialFunctions

@@ -57,7 +57,7 @@ end
         @test 2.0f0*cu == Gray(2.0f0*cu.val)
         f = N0f8(0.5)
         @test (f*cu).val ≈ f*cu.val
-        @test 2.*cf == ccmp
+        @test 2 .* cf == ccmp
         @test cf.*2 == ccmp
         @test cf/2.0f0 == Gray{Float32}(0.05)
         @test cu/2 == Gray(cu.val/2)
@@ -94,7 +94,7 @@ end
         @test typeof(acu.+cf) == Vector{Gray{Float32}}
         @test typeof(acu.-cf) == Vector{Gray{Float32}}
         @test typeof(2*acf) == Vector{Gray{Float32}}
-        @test typeof(2.*acf) == Vector{Gray{Float32}}
+        @test typeof(2 .* acf) == Vector{Gray{Float32}}
         @test typeof(0x02*acu) == Vector{Gray{Float32}}
         @test typeof(acu/2) == Vector{Gray{typeof(N0f8(0.5)/2)}}
         @test typeof(acf.^2) == Vector{Gray{Float32}}
@@ -225,7 +225,7 @@ end
         @test_colortype_approx_eq 2.0f0*cu RGB(2.0f0*cu.r, 2.0f0*cu.g, 2.0f0*cu.b)
         f = N0f8(0.5)
         @test (f*cu).r ≈ f*cu.r
-        @test 2.*cf == ccmp
+        @test 2 .* cf == ccmp
         @test cf.*2 == ccmp
         @test cf/2.0f0 == RGB{Float32}(0.05,0.1,0.15)
         @test cu/2 ≈ RGB(cu.r/2,cu.g/2,cu.b/2)
@@ -300,7 +300,7 @@ end
         @test_colortype_approx_eq 2.0f0*cu RGBA(2.0f0*cu.r, 2.0f0*cu.g, 2.0f0*cu.b, 2.0f0*cu.alpha)
         f = N0f8(0.5)
         @test (f*cu).r ≈ f*cu.r
-        @test 2.*cf == ccmp
+        @test 2 .* cf == ccmp
         @test cf.*2 == ccmp
         @test cf/2.0f0 == RGBA{Float32}(0.05,0.1,0.15,0.2)
         @test cu/2 == RGBA(cu.r/2,cu.g/2,cu.b/2,cu.alpha/2)

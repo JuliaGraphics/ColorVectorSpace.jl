@@ -52,8 +52,10 @@ mapreduce(f, op::Union{typeof(&), typeof(|)}, a::MathTypes) = f(a)  # ambiguity
 mapreduce(f, op, a::MathTypes) = f(a)
 if isdefined(Base, :r_promote)
     Base.r_promote(::typeof(+), c::MathTypes) = mapc(x->Base.r_promote(+, x), c)
-else
+elseif isdefined(Base, :promote_sys_size_add)
     Base.promote_sys_size_add(c::MathTypes) = mapc(Base.promote_sys_size_add, c)
+else
+    Base.add_sum(c1::MathTypes,c2::MathTypes) = mapc(Base.add_sum, c1, c2)
 end
 
 for f in (:trunc, :floor, :round, :ceil, :eps, :bswap)
@@ -304,6 +306,7 @@ Compat.@dep_vectorize_2arg Gray min
 
 # Arrays
 +(A::AbstractArray{C}) where {C<:MathTypes} = A
++(A::Array{C}) where {C<:MathTypes} = A
 
 (+)(A::AbstractArray{CV}, b::AbstractRGB) where {CV<:AbstractRGB} = (.+)(A, b)
 (+)(b::AbstractRGB, A::AbstractArray{CV}) where {CV<:AbstractRGB} = (.+)(b, A)

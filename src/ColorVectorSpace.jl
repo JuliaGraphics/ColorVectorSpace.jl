@@ -293,13 +293,8 @@ dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
 float(::Type{T}) where {T<:Gray} = typeof(float(zero(T)))
 
 # Mixed types
-if VERSION < v"0.7.0-DEV.2138"
-    (+)(a::MathTypes, b::MathTypes) = (+)(Base.promote_noncircular(a, b)...)
-    (-)(a::MathTypes, b::MathTypes) = (-)(Base.promote_noncircular(a, b)...)
-else
-    (+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)
-    (-)(a::MathTypes, b::MathTypes) = (-)(promote(a, b)...)
-end
+(+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)
+(-)(a::MathTypes, b::MathTypes) = (-)(promote(a, b)...)
 
 Compat.@dep_vectorize_2arg Gray max
 Compat.@dep_vectorize_2arg Gray min

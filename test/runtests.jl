@@ -2,7 +2,7 @@ module ColorVectorSpaceTests
 
 using ColorVectorSpace, Colors, FixedPointNumbers, StatsBase
 
-using Base.Test
+using Test
 
 macro test_colortype_approx_eq(a, b)
     :(test_colortype_approx_eq($(esc(a)), $(esc(b)), $(string(a)), $(string(b))))
@@ -161,6 +161,7 @@ end
                     v = @eval $op(gray(g))  # if this fails, don't bother
                     @show op
                     @test op(g) == v
+                catch
                 end
             end
         end

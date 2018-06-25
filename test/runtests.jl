@@ -1,6 +1,6 @@
 module ColorVectorSpaceTests
 
-using ColorVectorSpace, Colors, FixedPointNumbers, Compat, StatsBase
+using ColorVectorSpace, Colors, FixedPointNumbers, StatsBase
 
 using Base.Test
 

@@ -2,7 +2,7 @@ __precompile__(true)
 
 module ColorVectorSpace
 
-using Colors, FixedPointNumbers, SpecialFunctions, Compat
+using Colors, FixedPointNumbers, SpecialFunctions
 import StatsBase: histrange
 
 import Base: ==, +, -, *, /, ^, <, ~

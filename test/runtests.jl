@@ -161,6 +161,7 @@ end
                     v = @eval $op(gray(g))  # if this fails, don't bother
                     @show op
                     @test op(g) == v
+                catch
                 end
             end
         end

@@ -2,14 +2,17 @@ __precompile__(true)
 
 module ColorVectorSpace
 
-using Colors, FixedPointNumbers, SpecialFunctions, Compat
-import StatsBase: histrange
+using Colors, FixedPointNumbers, SpecialFunctions
 
 import Base: ==, +, -, *, /, ^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
-    isnan, isless, length, mapreduce, norm, oneunit, promote_array_type,
+    isnan, isless, length, mapreduce, oneunit,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
-    mod, rem, atan2, hypot, max, min, varm, real, typemin, typemax
+    mod, rem, atan2, hypot, max, min, real, typemin, typemax
+import LinearAlgebra: norm
+import StatsBase: histrange, varm
+import SpecialFunctions: gamma, lgamma, lfact
+import Statistics: middle
 
 export nan
 
@@ -23,9 +26,9 @@ import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   asind, atand, rad2deg, deg2rad,
                   log, log2, log10, log1p, exponent, exp,
                   exp2, expm1, cbrt, sqrt,
-                  significand, lgamma,
-                  gamma, lfact, frexp, modf,
-                  float, middle
+                  significand,
+                  frexp, modf,
+                  float
 
 export dotc
 
@@ -60,14 +63,9 @@ end
 
 for f in (:trunc, :floor, :round, :ceil, :eps, :bswap)
     @eval $f(g::Gray{T}) where {T} = Gray{T}($f(gray(g)))
-    @eval Compat.@dep_vectorize_1arg Gray $f
 end
 eps(::Type{Gray{T}}) where {T} = Gray(eps(T))
-Compat.@dep_vectorize_1arg AbstractGray isfinite
-Compat.@dep_vectorize_1arg AbstractGray isinf
-Compat.@dep_vectorize_1arg AbstractGray isnan
-Compat.@dep_vectorize_1arg AbstractGray abs
-Compat.@dep_vectorize_1arg AbstractGray abs2
+
 for f in (:trunc, :floor, :round, :ceil)
     @eval $f(::Type{T}, g::Gray) where {T<:Integer} = Gray{T}($f(T, gray(g)))
 end
@@ -274,7 +272,7 @@ function Base.isapprox(x::AbstractArray{Cx},
                        y::AbstractArray{Cy};
                        rtol::Real=Base.rtoldefault(eltype(Cx),eltype(Cy),0),
                        atol::Real=0,
-                       norm::Function=vecnorm) where {Cx<:MathTypes,Cy<:MathTypes}
+                       norm::Function=norm) where {Cx<:MathTypes,Cy<:MathTypes}
     d = norm(x - y)
     if isfinite(d)
         return d <= atol + rtol*max(norm(x), norm(y))
@@ -293,16 +291,8 @@ dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
 float(::Type{T}) where {T<:Gray} = typeof(float(zero(T)))
 
 # Mixed types
-if VERSION < v"0.7.0-DEV.2138"
-    (+)(a::MathTypes, b::MathTypes) = (+)(Base.promote_noncircular(a, b)...)
-    (-)(a::MathTypes, b::MathTypes) = (-)(Base.promote_noncircular(a, b)...)
-else
-    (+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)
-    (-)(a::MathTypes, b::MathTypes) = (-)(promote(a, b)...)
-end
-
-Compat.@dep_vectorize_2arg Gray max
-Compat.@dep_vectorize_2arg Gray min
+(+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)
+(-)(a::MathTypes, b::MathTypes) = (-)(promote(a, b)...)
 
 # Arrays
 +(A::AbstractArray{C}) where {C<:MathTypes} = A
@@ -345,7 +335,6 @@ real(::Type{C}) where {C<:AbstractGray} = real(eltype(C))
 histrange(v::AbstractArray{Gray{T}}, n::Integer) where {T} = histrange(convert(Array{Float32}, map(gray, v)), n, :right)
 
 # To help type inference
-promote_array_type(F, ::Type{T}, ::Type{C}) where {T<:Real,C<:MathTypes} = base_colorant_type(C){Base.promote_array_type(F, T, eltype(C))}
 promote_rule(::Type{T}, ::Type{C}) where {T<:Real,C<:AbstractGray} = promote_type(T, eltype(C))
 
 typemin(::Type{T}) where {T<:ColorTypes.AbstractGray} = T(typemin(eltype(T)))
@@ -353,19 +342,5 @@ typemax(::Type{T}) where {T<:ColorTypes.AbstractGray} = T(typemax(eltype(T)))
 
 typemin(::T) where {T<:ColorTypes.AbstractGray} = T(typemin(eltype(T)))
 typemax(::T) where {T<:ColorTypes.AbstractGray} = T(typemax(eltype(T)))
-
-# deprecations
-function Base.one(::Type{C}) where {C<:Union{TransparentGray,AbstractRGB,TransparentRGB}}
-    Base.depwarn("one($C) will soon switch to returning 1; you might need to switch to `oneunit`", :one)
-    C(_onetuple(C)...)
-end
-_onetuple(::Type{C}) where {C<:Colorant{T,N}} where {T,N} = ntuple(d->1, Val(N))
-
-for f in (:min, :max)
-    @eval begin
-        @deprecate($f{T<:Gray}(x::Number, y::AbstractArray{T}), $f.(x, y))
-        @deprecate($f{T<:Gray}(x::AbstractArray{T}, y::Number), $f.(x, y))
-    end
-end
 
 end

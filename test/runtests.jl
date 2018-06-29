@@ -1,8 +1,11 @@
 module ColorVectorSpaceTests
 
-using ColorVectorSpace, Colors, FixedPointNumbers, Compat, StatsBase
+using LinearAlgebra, Statistics
+using ColorVectorSpace, Colors, FixedPointNumbers, StatsBase
 
-using Base.Test
+using Test
+
+const var = Statistics.var
 
 macro test_colortype_approx_eq(a, b)
     :(test_colortype_approx_eq($(esc(a)), $(esc(b)), $(string(a)), $(string(b))))
@@ -57,8 +60,6 @@ end
         @test 2.0f0*cu == Gray(2.0f0*cu.val)
         f = N0f8(0.5)
         @test (f*cu).val ≈ f*cu.val
-        @test 2 .* cf == ccmp
-        @test cf.*2 == ccmp
         @test cf/2.0f0 == Gray{Float32}(0.05)
         @test cu/2 == Gray(cu.val/2)
         @test cu/0.5f0 == Gray(cu.val/0.5f0)
@@ -89,8 +90,6 @@ end
         @test typeof(acu-acf) == Vector{Gray{Float32}}
         @test typeof(acu.+acf) == Vector{Gray{Float32}}
         @test typeof(acu.-acf) == Vector{Gray{Float32}}
-        @test typeof(acu+cf) == Vector{Gray{Float32}}
-        @test typeof(acu-cf) == Vector{Gray{Float32}}
         @test typeof(acu.+cf) == Vector{Gray{Float32}}
         @test typeof(acu.-cf) == Vector{Gray{Float32}}
         @test typeof(2*acf) == Vector{Gray{Float32}}
@@ -161,6 +160,7 @@ end
                     v = @eval $op(gray(g))  # if this fails, don't bother
                     @show op
                     @test op(g) == v
+                catch
                 end
             end
         end
@@ -225,8 +225,6 @@ end
         @test_colortype_approx_eq 2.0f0*cu RGB(2.0f0*cu.r, 2.0f0*cu.g, 2.0f0*cu.b)
         f = N0f8(0.5)
         @test (f*cu).r ≈ f*cu.r
-        @test 2 .* cf == ccmp
-        @test cf.*2 == ccmp
         @test cf/2.0f0 == RGB{Float32}(0.05,0.1,0.15)
         @test cu/2 ≈ RGB(cu.r/2,cu.g/2,cu.b/2)
         @test cu/0.5f0 == RGB(cu.r/0.5f0, cu.g/0.5f0, cu.b/0.5f0)
@@ -300,8 +298,6 @@ end
         @test_colortype_approx_eq 2.0f0*cu RGBA(2.0f0*cu.r, 2.0f0*cu.g, 2.0f0*cu.b, 2.0f0*cu.alpha)
         f = N0f8(0.5)
         @test (f*cu).r ≈ f*cu.r
-        @test 2 .* cf == ccmp
-        @test cf.*2 == ccmp
         @test cf/2.0f0 == RGBA{Float32}(0.05,0.1,0.15,0.2)
         @test cu/2 == RGBA(cu.r/2,cu.g/2,cu.b/2,cu.alpha/2)
         @test cu/0.5f0 == RGBA(cu.r/0.5f0, cu.g/0.5f0, cu.b/0.5f0, cu.alpha/0.5f0)
@@ -379,7 +375,7 @@ end
             @test typemax(Gray{T}) === Gray{T}(typemax(T))
             @test typemin(Gray{T}(0.5)) === Gray{T}(typemin(T))
             @test typemax(Gray{T}(0.5)) === Gray{T}(typemax(T))
-            A = maximum(Gray{T}.([1 0 0; 0 1 0]), 1)  # see PR#44 discussion
+            A = maximum(Gray{T}.([1 0 0; 0 1 0]); dims=1)  # see PR#44 discussion
             @test isa(A, Matrix{Gray{T}})
             @test size(A) == (1,3)
         end

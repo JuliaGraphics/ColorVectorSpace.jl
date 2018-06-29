@@ -60,14 +60,9 @@ end
 
 for f in (:trunc, :floor, :round, :ceil, :eps, :bswap)
     @eval $f(g::Gray{T}) where {T} = Gray{T}($f(gray(g)))
-    @eval Compat.@dep_vectorize_1arg Gray $f
 end
 eps(::Type{Gray{T}}) where {T} = Gray(eps(T))
-Compat.@dep_vectorize_1arg AbstractGray isfinite
-Compat.@dep_vectorize_1arg AbstractGray isinf
-Compat.@dep_vectorize_1arg AbstractGray isnan
-Compat.@dep_vectorize_1arg AbstractGray abs
-Compat.@dep_vectorize_1arg AbstractGray abs2
+
 for f in (:trunc, :floor, :round, :ceil)
     @eval $f(::Type{T}, g::Gray) where {T<:Integer} = Gray{T}($f(T, gray(g)))
 end
@@ -296,8 +291,6 @@ float(::Type{T}) where {T<:Gray} = typeof(float(zero(T)))
 (+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)
 (-)(a::MathTypes, b::MathTypes) = (-)(promote(a, b)...)
 
-Compat.@dep_vectorize_2arg Gray max
-Compat.@dep_vectorize_2arg Gray min
 
 # Arrays
 +(A::AbstractArray{C}) where {C<:MathTypes} = A

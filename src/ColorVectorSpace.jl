@@ -10,9 +10,8 @@ import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
     mod, rem, atan2, hypot, max, min, real, typemin, typemax
 import LinearAlgebra: norm
-import StatsBase: histrange, varm
+import StatsBase: histrange, varm, middle
 import SpecialFunctions: gamma, lgamma, lfact
-import Statistics: middle
 
 export nan
 

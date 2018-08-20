@@ -32,9 +32,7 @@ import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
 
 export dotc
 
-AbstractGray{T} = Color{T,1}
-TransparentRGB{C<:AbstractRGB,T}   = TransparentColor{C,T,4}
-TransparentGray{C<:AbstractGray,T} = TransparentColor{C,T,2}
+# TODO: we get rid of these definitions or move them to ColorTypes.jl
 TransparentRGBFloat{C<:AbstractRGB,T<:AbstractFloat} = TransparentColor{C,T,4}
 TransparentGrayFloat{C<:AbstractGray,T<:AbstractFloat} = TransparentColor{C,T,2}
 TransparentRGBNormed{C<:AbstractRGB,T<:Normed} = TransparentColor{C,T,4}

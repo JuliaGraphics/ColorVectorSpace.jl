@@ -76,6 +76,7 @@ end
         @test !isnan(Gray(Inf))
         @test abs(Gray(0.1)) ≈ 0.1
         @test eps(Gray{N0f8}) == Gray(eps(N0f8))  # #282
+        @test atan(Gray(0.1), Gray(0.2)) == atan(0.1, 0.2)
 
         acu = Gray{N0f8}[cu]
         acf = Gray{Float32}[cf]

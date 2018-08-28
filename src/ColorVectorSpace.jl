@@ -8,7 +8,7 @@ import Base: ==, +, -, *, /, ^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     isnan, isless, length, mapreduce, oneunit,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
-    mod, rem, atan2, hypot, max, min, real, typemin, typemax
+    mod, rem, atan, hypot, max, min, real, typemin, typemax
 import LinearAlgebra: norm
 import StatsBase: histrange, varm
 import SpecialFunctions: gamma, lgamma, lfact
@@ -255,7 +255,7 @@ abs2(c::AbstractGray) = gray(c)^2
 abs2(c::AbstractGray{T}) where {T<:Normed} = Float32(gray(c))^2
 abs2(c::TransparentGray) = gray(c)^2+alpha(c)^2
 abs2(c::TransparentGrayNormed) = Float32(gray(c))^2 + Float32(alpha(c))^2
-atan2(x::Gray, y::Gray) = atan2(convert(Real, x), convert(Real, y))
+atan(x::Gray, y::Gray) = atan(convert(Real, x), convert(Real, y))
 hypot(x::Gray, y::Gray) = hypot(convert(Real, x), convert(Real, y))
 norm(c::TransparentGray) = sqrt(abs2(c))
 

@@ -2,13 +2,14 @@ __precompile__(true)
 
 module ColorVectorSpace
 
-using Colors, FixedPointNumbers, SpecialFunctions
+using Colors, FixedPointNumbers, SpecialFunctions, Random, ImageCore
 
 import Base: ==, +, -, *, /, ^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     isnan, isless, length, mapreduce, oneunit,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
     mod, rem, atan, hypot, max, min, real, typemin, typemax
+import Base: rand, randn
 import LinearAlgebra: norm
 import StatsBase: histrange, varm
 import SpecialFunctions: gamma, lgamma, lfact
@@ -170,6 +171,9 @@ abs2(c::TransparentRGB) = (ret = abs2(color(c)); ret + convert(typeof(ret), alph
 norm(c::AbstractRGB) = sqrt(abs2(c))
 norm(c::TransparentRGB) = sqrt(abs2(c))
 
+rand(rng::Random.AbstractRNG, T::Type{<:AbstractRGB}, dims::Int...) = colorview(RGB,rand(rng, eltype(T), (3,dims...)))
+randn(rng::Random.AbstractRNG, T::Type{<:AbstractRGB}, dims::Int...) = colorview(RGB,randn(rng, eltype(T), (3,dims...)))
+
 oneunit(::Type{C}) where {C<:AbstractRGB}     = C(1,1,1)
 oneunit(::Type{C}) where {C<:TransparentRGB}  = C(1,1,1,1)
 
@@ -258,6 +262,9 @@ abs2(c::TransparentGrayNormed) = Float32(gray(c))^2 + Float32(alpha(c))^2
 atan(x::Gray, y::Gray) = atan(convert(Real, x), convert(Real, y))
 hypot(x::Gray, y::Gray) = hypot(convert(Real, x), convert(Real, y))
 norm(c::TransparentGray) = sqrt(abs2(c))
+
+rand(rng::Random.AbstractRNG, T::Type{<:AbstractGray}, dims::Int...) = colorview(Gray,rand(rng, eltype(T), dims))
+randn(rng::Random.AbstractRNG, T::Type{<:AbstractGray}, dims::Int...) = colorview(Gray,randn(rng, eltype(T), dims))
 
 (<)(g1::AbstractGray, g2::AbstractGray) = gray(g1) < gray(g2)
 (<)(c::AbstractGray, r::Real) = gray(c) < r

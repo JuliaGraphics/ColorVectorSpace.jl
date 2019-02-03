@@ -98,8 +98,8 @@ end
         @test typeof(0x02*acu) == Vector{Gray{Float32}}
         @test typeof(acu/2) == Vector{Gray{typeof(N0f8(0.5)/2)}}
         @test typeof(acf.^2) == Vector{Gray{Float32}}
-        @test (acu/Gray{N0f8}(0.5))[1] == gray(acu[1])/N0f8(0.5)
-        @test (acf/Gray{Float32}(2))[1] ≈ 0.05f0
+        @test (acu./Gray{N0f8}(0.5))[1] == gray(acu[1])/N0f8(0.5)
+        @test (acf./Gray{Float32}(2))[1] ≈ 0.05f0
         @test (acu/2)[1] == Gray(gray(acu[1])/2)
         @test (acf/2)[1] ≈ Gray{Float32}(0.05f0)
         @test sum(abs2, [cf, ccmp]) ≈ 0.05f0
@@ -182,11 +182,9 @@ end
         @test_colortype_approx_eq 0.4f0*p1+0.6f0*p2 GrayA{Float32}(Gray(0.68),0.26)
         @test_colortype_approx_eq ([p1]+[p2])[1] GrayA{Float32}(Gray(1.4),0.5)
         @test_colortype_approx_eq ([p1].+[p2])[1] GrayA{Float32}(Gray(1.4),0.5)
-        @test_colortype_approx_eq ([p1]+p2)[1] GrayA{Float32}(Gray(1.4),0.5)
         @test_colortype_approx_eq ([p1].+p2)[1] GrayA{Float32}(Gray(1.4),0.5)
         @test_colortype_approx_eq ([p1]-[p2])[1] GrayA{Float32}(Gray(0.2),-0.1)
         @test_colortype_approx_eq ([p1].-[p2])[1] GrayA{Float32}(Gray(0.2),-0.1)
-        @test_colortype_approx_eq ([p1]-p2)[1] GrayA{Float32}(Gray(0.2),-0.1)
         @test_colortype_approx_eq ([p1].-p2)[1] GrayA{Float32}(Gray(0.2),-0.1)
         @test_colortype_approx_eq ([p1]/2)[1] GrayA{Float32}(Gray(0.4),0.1)
         @test_colortype_approx_eq (0.4f0*[p1]+0.6f0*[p2])[1] GrayA{Float32}(Gray(0.68),0.26)
@@ -231,8 +229,6 @@ end
         @test cu/0.5f0 == RGB(cu.r/0.5f0, cu.g/0.5f0, cu.b/0.5f0)
         @test cf+cf == ccmp
         @test cu * 1//2 == mapc(x->Float64(Rational(x)/2), cu)
-        @test_colortype_approx_eq (cf*[0.8f0])[1] RGB{Float32}(0.8*0.1,0.8*0.2,0.8*0.3)
-        @test_colortype_approx_eq ([0.8f0]*cf)[1] RGB{Float32}(0.8*0.1,0.8*0.2,0.8*0.3)
         @test_colortype_approx_eq (cf.*[0.8f0])[1] RGB{Float32}(0.8*0.1,0.8*0.2,0.8*0.3)
         @test_colortype_approx_eq ([0.8f0].*cf)[1] RGB{Float32}(0.8*0.1,0.8*0.2,0.8*0.3)
         @test isfinite(cf)
@@ -254,8 +250,6 @@ end
         @test typeof(acu-acf) == Vector{RGB{Float32}}
         @test typeof(acu.+acf) == Vector{RGB{Float32}}
         @test typeof(acu.-acf) == Vector{RGB{Float32}}
-        @test typeof(acu+cf) == Vector{RGB{Float32}}
-        @test typeof(acu-cf) == Vector{RGB{Float32}}
         @test typeof(acu.+cf) == Vector{RGB{Float32}}
         @test typeof(acu.-cf) == Vector{RGB{Float32}}
         @test typeof(2*acf) == Vector{RGB{Float32}}
@@ -303,8 +297,6 @@ end
         @test cu/2 == RGBA(cu.r/2,cu.g/2,cu.b/2,cu.alpha/2)
         @test cu/0.5f0 == RGBA(cu.r/0.5f0, cu.g/0.5f0, cu.b/0.5f0, cu.alpha/0.5f0)
         @test cf+cf == ccmp
-        @test_colortype_approx_eq (cf*[0.8f0])[1] RGBA{Float32}(0.8*0.1,0.8*0.2,0.8*0.3,0.8*0.4)
-        @test_colortype_approx_eq ([0.8f0]*cf)[1] RGBA{Float32}(0.8*0.1,0.8*0.2,0.8*0.3,0.8*0.4)
         @test_colortype_approx_eq (cf.*[0.8f0])[1] RGBA{Float32}(0.8*0.1,0.8*0.2,0.8*0.3,0.8*0.4)
         @test_colortype_approx_eq ([0.8f0].*cf)[1] RGBA{Float32}(0.8*0.1,0.8*0.2,0.8*0.3,0.8*0.4)
         @test isfinite(cf)
@@ -330,8 +322,6 @@ end
         @test typeof(acu-acf) == Vector{RGBA{Float32}}
         @test typeof(acu.+acf) == Vector{RGBA{Float32}}
         @test typeof(acu.-acf) == Vector{RGBA{Float32}}
-        @test typeof(acu+cf) == Vector{RGBA{Float32}}
-        @test typeof(acu-cf) == Vector{RGBA{Float32}}
         @test typeof(acu.+cf) == Vector{RGBA{Float32}}
         @test typeof(acu.-cf) == Vector{RGBA{Float32}}
         @test typeof(2*acf) == Vector{RGBA{Float32}}

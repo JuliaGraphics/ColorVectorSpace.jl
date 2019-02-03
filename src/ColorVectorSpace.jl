@@ -292,38 +292,9 @@ float(::Type{T}) where {T<:Gray} = typeof(float(zero(T)))
 (+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)
 (-)(a::MathTypes, b::MathTypes) = (-)(promote(a, b)...)
 
-# Arrays
+# Arrays---necessary methods
 +(A::AbstractArray{C}) where {C<:MathTypes} = A
 +(A::Array{C}) where {C<:MathTypes} = A
-
-(+)(A::AbstractArray{CV}, b::AbstractRGB) where {CV<:AbstractRGB} = (.+)(A, b)
-(+)(b::AbstractRGB, A::AbstractArray{CV}) where {CV<:AbstractRGB} = (.+)(b, A)
-(-)(A::AbstractArray{CV}, b::AbstractRGB) where {CV<:AbstractRGB} = (.-)(A, b)
-(-)(b::AbstractRGB, A::AbstractArray{CV}) where {CV<:AbstractRGB} = (.-)(b, A)
-(*)(A::AbstractArray{T}, b::AbstractRGB) where {T<:Number} = A.*b
-(*)(b::AbstractRGB, A::AbstractArray{T}) where {T<:Number} = A.*b
-
-(+)(A::AbstractArray{CV}, b::TransparentRGB) where {CV<:TransparentRGB} = (.+)(A, b)
-(+)(b::TransparentRGB, A::AbstractArray{CV}) where {CV<:TransparentRGB} = (.+)(b, A)
-(-)(A::AbstractArray{CV}, b::TransparentRGB) where {CV<:TransparentRGB} = (.-)(A, b)
-(-)(b::TransparentRGB, A::AbstractArray{CV}) where {CV<:TransparentRGB} = (.-)(b, A)
-(*)(A::AbstractArray{T}, b::TransparentRGB) where {T<:Number} = A.*b
-(*)(b::TransparentRGB, A::AbstractArray{T}) where {T<:Number} = A.*b
-
-(+)(A::AbstractArray{CV}, b::AbstractGray) where {CV<:AbstractGray} = (.+)(A, b)
-(+)(b::AbstractGray, A::AbstractArray{CV}) where {CV<:AbstractGray} = (.+)(b, A)
-(-)(A::AbstractArray{CV}, b::AbstractGray) where {CV<:AbstractGray} = (.-)(A, b)
-(-)(b::AbstractGray, A::AbstractArray{CV}) where {CV<:AbstractGray} = (.-)(b, A)
-(*)(A::AbstractArray{T}, b::AbstractGray) where {T<:Number} = A.*b
-(*)(b::AbstractGray, A::AbstractArray{T}) where {T<:Number} = A.*b
-(/)(A::AbstractArray{C}, b::AbstractGray) where {C<:AbstractGray} = A./b
-
-(+)(A::AbstractArray{CV}, b::TransparentGray) where {CV<:TransparentGray} = (.+)(A, b)
-(+)(b::TransparentGray, A::AbstractArray{CV}) where {CV<:TransparentGray} = (.+)(b, A)
-(-)(A::AbstractArray{CV}, b::TransparentGray) where {CV<:TransparentGray} = (.-)(A, b)
-(-)(b::TransparentGray, A::AbstractArray{CV}) where {CV<:TransparentGray} = (.-)(b, A)
-(*)(A::AbstractArray{T}, b::TransparentGray) where {T<:Number} = A.*b
-(*)(b::TransparentGray, A::AbstractArray{T}) where {T<:Number} = A.*b
 
 varm(v::AbstractArray{C}, s::AbstractGray; corrected::Bool=true) where {C<:AbstractGray} =
         varm(map(gray,v),gray(s); corrected=corrected)
@@ -340,5 +311,36 @@ typemax(::Type{T}) where {T<:ColorTypes.AbstractGray} = T(typemax(eltype(T)))
 
 typemin(::T) where {T<:ColorTypes.AbstractGray} = T(typemin(eltype(T)))
 typemax(::T) where {T<:ColorTypes.AbstractGray} = T(typemax(eltype(T)))
+
+## Deprecations
+
+@deprecate (+)(A::AbstractArray{CV}, b::AbstractRGB) where {CV<:AbstractRGB} (.+)(A, b)
+@deprecate (+)(b::AbstractRGB, A::AbstractArray{CV}) where {CV<:AbstractRGB} (.+)(b, A)
+@deprecate (-)(A::AbstractArray{CV}, b::AbstractRGB) where {CV<:AbstractRGB} (.-)(A, b)
+@deprecate (-)(b::AbstractRGB, A::AbstractArray{CV}) where {CV<:AbstractRGB} (.-)(b, A)
+@deprecate (*)(A::AbstractArray{T}, b::AbstractRGB) where {T<:Number} A.*b
+@deprecate (*)(b::AbstractRGB, A::AbstractArray{T}) where {T<:Number} A.*b
+
+@deprecate (+)(A::AbstractArray{CV}, b::TransparentRGB) where {CV<:TransparentRGB} (.+)(A, b)
+@deprecate (+)(b::TransparentRGB, A::AbstractArray{CV}) where {CV<:TransparentRGB} (.+)(b, A)
+@deprecate (-)(A::AbstractArray{CV}, b::TransparentRGB) where {CV<:TransparentRGB} (.-)(A, b)
+@deprecate (-)(b::TransparentRGB, A::AbstractArray{CV}) where {CV<:TransparentRGB} (.-)(b, A)
+@deprecate (*)(A::AbstractArray{T}, b::TransparentRGB) where {T<:Number} A.*b
+@deprecate (*)(b::TransparentRGB, A::AbstractArray{T}) where {T<:Number} A.*b
+
+@deprecate (+)(A::AbstractArray{CV}, b::AbstractGray) where {CV<:AbstractGray} (.+)(A, b)
+@deprecate (+)(b::AbstractGray, A::AbstractArray{CV}) where {CV<:AbstractGray} (.+)(b, A)
+@deprecate (-)(A::AbstractArray{CV}, b::AbstractGray) where {CV<:AbstractGray} (.-)(A, b)
+@deprecate (-)(b::AbstractGray, A::AbstractArray{CV}) where {CV<:AbstractGray} (.-)(b, A)
+@deprecate (*)(A::AbstractArray{T}, b::AbstractGray) where {T<:Number} A.*b
+@deprecate (*)(b::AbstractGray, A::AbstractArray{T}) where {T<:Number} A.*b
+@deprecate (/)(A::AbstractArray{C}, b::AbstractGray) where {C<:AbstractGray} A./b
+
+@deprecate (+)(A::AbstractArray{CV}, b::TransparentGray) where {CV<:TransparentGray} (.+)(A, b)
+@deprecate (+)(b::TransparentGray, A::AbstractArray{CV}) where {CV<:TransparentGray} (.+)(b, A)
+@deprecate (-)(A::AbstractArray{CV}, b::TransparentGray) where {CV<:TransparentGray} (.-)(A, b)
+@deprecate (-)(b::TransparentGray, A::AbstractArray{CV}) where {CV<:TransparentGray} (.-)(b, A)
+@deprecate (*)(A::AbstractArray{T}, b::TransparentGray) where {T<:Number} A.*b
+@deprecate (*)(b::TransparentGray, A::AbstractArray{T}) where {T<:Number} A.*b
 
 end

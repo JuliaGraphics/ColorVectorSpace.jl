@@ -9,7 +9,7 @@ import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     isnan, isless, length, mapreduce, oneunit,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
     mod, rem, atan, hypot, max, min, real, typemin, typemax
-import LinearAlgebra: norm
+import LinearAlgebra: norm, dot
 import StatsBase: histrange, varm
 import SpecialFunctions: gamma, lgamma, lfact
 import Statistics: middle
@@ -258,6 +258,7 @@ abs2(c::TransparentGrayNormed) = Float32(gray(c))^2 + Float32(alpha(c))^2
 atan(x::Gray, y::Gray) = atan(convert(Real, x), convert(Real, y))
 hypot(x::Gray, y::Gray) = hypot(convert(Real, x), convert(Real, y))
 norm(c::TransparentGray) = sqrt(abs2(c))
+dot(x::Gray, y::Gray) = gray(x) * gray(y)
 
 (<)(g1::AbstractGray, g2::AbstractGray) = gray(g1) < gray(g2)
 (<)(c::AbstractGray, r::Real) = gray(c) < r

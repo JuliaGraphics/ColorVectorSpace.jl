@@ -51,12 +51,11 @@ _nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:TransparentRGB} = (x = con
 ## Generic algorithms
 mapreduce(f, op::Union{typeof(&), typeof(|)}, a::MathTypes) = f(a)  # ambiguity
 mapreduce(f, op, a::MathTypes) = f(a)
-if isdefined(Base, :r_promote)
-    Base.r_promote(::typeof(+), c::MathTypes) = mapc(x->Base.r_promote(+, x), c)
-elseif isdefined(Base, :promote_sys_size_add)
-    Base.promote_sys_size_add(c::MathTypes) = mapc(Base.promote_sys_size_add, c)
-else
-    Base.add_sum(c1::MathTypes,c2::MathTypes) = mapc(Base.add_sum, c1, c2)
+Base.add_sum(c1::MathTypes,c2::MathTypes) = mapc(Base.add_sum, c1, c2)
+Base.reduce_first(::typeof(Base.add_sum), c::MathTypes) = mapc(x->Base.reduce_first(Base.add_sum, x), c)
+function Base.reduce_empty(::typeof(Base.add_sum), ::Type{T}) where {T<:MathTypes}
+    z = Base.reduce_empty(Base.add_sum, eltype(T))
+    return zero(base_colorant_type(T){typeof(z)})
 end
 
 for f in (:trunc, :floor, :round, :ceil, :eps, :bswap)

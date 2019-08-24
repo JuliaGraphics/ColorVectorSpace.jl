@@ -371,6 +371,11 @@ end
             @test size(A) == (1,3)
         end
     end
+
+    @testset "Colors issue #326" begin
+        A = rand(RGB{N0f8}, 2, 2)
+        @test @inferred mean(A) == mean(map(c->mapc(FixedPointNumbers.Treduce, c), A))
+    end
 end
 
 end

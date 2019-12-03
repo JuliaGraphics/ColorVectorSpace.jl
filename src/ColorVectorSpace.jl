@@ -1,5 +1,3 @@
-__precompile__(true)
-
 module ColorVectorSpace
 
 using Colors, FixedPointNumbers, SpecialFunctions
@@ -310,6 +308,9 @@ typemax(::Type{T}) where {T<:ColorTypes.AbstractGray} = T(typemax(eltype(T)))
 
 typemin(::T) where {T<:ColorTypes.AbstractGray} = T(typemin(eltype(T)))
 typemax(::T) where {T<:ColorTypes.AbstractGray} = T(typemax(eltype(T)))
+
+include("precompile.jl")
+_precompile_()
 
 ## Deprecations
 

@@ -111,6 +111,12 @@ arith_colorant_type(::Type{AGray32}) = AGray
 arith_colorant_type(::Type{RGB24}) = RGB
 arith_colorant_type(::Type{ARGB32}) = ARGB
 
+higher_float_precision_native(::Type{Float64}) = Float64   # Float64 is the highest native precision
+higher_float_precision_native(::Type{Float32}) = Float64
+higher_float_precision_native(::Type{Float16}) = Float32
+higher_float_precision_native(::Type{T}) where T<:Real = T
+higher_float_precision_native(x::T) where T<:Real = convert(higher_float_precision_native(T), x)
+
 ## Math on Colors. These implementations encourage inlining and,
 ## for the case of Normed types, nearly halve the number of multiplications (for RGB)
 
@@ -131,7 +137,7 @@ function (*)(f::Normed, c::AbstractRGB{T}) where T<:Normed
     arith_colorant_type(c){multype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
 function (/)(c::AbstractRGB{T}, f::Real) where T<:Normed
-    fs = (one(f)/reinterpret(oneunit(T)))/f
+    fs = (higher_float_precision_native(one(f))/reinterpret(oneunit(T)))/f
     arith_colorant_type(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
 function (/)(c::AbstractRGB{T}, f::Integer) where T<:Normed

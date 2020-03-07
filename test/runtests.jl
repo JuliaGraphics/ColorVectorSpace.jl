@@ -126,6 +126,13 @@ end
         @test Gray24(0.8)*0.5 === Gray(0.4)
         @test Gray24(0.8)/2   === Gray(0.5f0*N0f8(0.8))
         @test Gray24(0.8)/2.0 === Gray(0.4)
+
+        # Complement
+        @test complement(Gray(0.5)) == Gray(0.5)
+        @test complement(Gray(0.2)) == Gray(0.8)
+        @test all(complement.(img) .== 1 .- img)
+        # deprecated (#690)
+        @test all(complement.(img) .== 1 .- img)
     end
 
     @testset "Comparisons with Gray" begin
@@ -274,6 +281,14 @@ end
         @test RGB24(1,0,0)*0.5 === RGB(0.5,0,0)
         @test RGB24(1,0,0)/2   === RGB(0.5f0,0,0)
         @test RGB24(1,0,0)/2.0 === RGB(0.5,0,0)
+    end
+
+    @testset "Complement" begin
+        @test complement.([Gray(0.2)]) == [Gray(0.8)]
+        @test complement.([Gray{N0f8}(0.2)]) == [Gray{N0f8}(0.8)]
+        @test complement.([RGB(0,0.3,1)]) == [RGB(1,0.7,0)]
+        @test complement.([RGBA(0,0.3,1,0.7)]) == [RGBA(1.0,0.7,0.0,0.7)]
+        @test complement.([RGBA{N0f8}(0,0.6,1,0.7)]) == [RGBA{N0f8}(1.0,0.4,0.0,0.7)]
     end
 
     @testset "Arithemtic with RGBA" begin

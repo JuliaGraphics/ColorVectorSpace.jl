@@ -10,7 +10,7 @@ import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
 import LinearAlgebra: norm
 import StatsBase: histrange, varm
 import SpecialFunctions: gamma, lgamma, lfact
-import Statistics: middle
+import Statistics: middle, var, std
 
 export nan
 
@@ -207,6 +207,35 @@ for op in unaryOps
     @eval ($op)(c::AbstractGray) = $op(gray(c))
 end
 
+function var(A::AbstractArray{C}; kwargs...) where C<:AbstractGray
+    imgc = channelview(A)
+    base_colorant_type(C)(var(imgc; kwargs...))
+end
+
+function var(A::AbstractArray{C,N}; kwargs...) where {C<:Colorant,N}
+    imgc = channelview(A)
+    colons = ntuple(d->Colon(), Val(N))
+    inds1 = axes(imgc, 1)
+    val1 = var(view(imgc, first(inds1), colons...); kwargs...)
+    vals = similar(imgc, typeof(val1), inds1)
+    vals[1] = val1
+    for i in first(inds1)+1:last(inds1)
+        vals[i] = var(view(imgc, i, colons...); kwargs...)
+    end
+    base_colorant_type(C)(vals...)
+end
+
+"""
+    y = complement(x)
+
+Take the complement `1-x` of `x`.  If `x` is a color with an alpha channel,
+the alpha channel is left untouched. Don't forget to add a dot when `x` is
+an array: `complement.(x)`
+"""
+complement(x::Union{Number,Colorant}) = oneunit(x)-x
+complement(x::TransparentColor) = typeof(x)(complement(color(x)), alpha(x))
+
+std(A::AbstractArray{C}; kwargs...) where {C<:Colorant} = mapc(sqrt, var(A; kwargs...))
 middle(c::AbstractGray) = arith_colorant_type(c)(middle(gray(c)))
 middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(x), gray(y)))
 
@@ -343,4 +372,5 @@ _precompile_()
 @deprecate (*)(A::AbstractArray{T}, b::TransparentGray) where {T<:Number} A.*b
 @deprecate (*)(b::TransparentGray, A::AbstractArray{T}) where {T<:Number} A.*b
 
+@deprecate complement(x::AbstractArray) complement.(x)
 end

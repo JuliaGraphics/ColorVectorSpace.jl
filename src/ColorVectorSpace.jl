@@ -27,7 +27,7 @@ import SpecialFunctions: gamma, lgamma, lfact
 using Statistics
 import Statistics: middle, _mean_promote
 
-export RGBRGB, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm, varmult
+export RGBRGB, complement, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm, varmult
 
 MathTypes{T,C} = Union{AbstractRGB{T},TransparentRGB{C,T},AbstractGray{T},TransparentGray{C,T}}
 
@@ -224,6 +224,16 @@ const unaryOps = (:~, :conj, :abs,
 for op in unaryOps
     @eval ($op)(c::AbstractGray) = Gray($op(gray(c)))
 end
+
+"""
+    y = complement(x)
+
+Take the complement `1-x` of `x`.  If `x` is a color with an alpha channel,
+the alpha channel is left untouched. Don't forget to add a dot when `x` is
+an array: `complement.(x)`
+"""
+complement(x::Union{Number,Colorant}) = oneunit(x)-x
+complement(x::TransparentColor) = typeof(x)(complement(color(x)), alpha(x))
 
 middle(c::AbstractGray) = arith_colorant_type(c)(middle(gray(c)))
 middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(x), gray(y)))

@@ -259,7 +259,9 @@ norm(c::TransparentGray) = sqrt(abs2(c))
 (<)(g1::AbstractGray, g2::AbstractGray) = gray(g1) < gray(g2)
 (<)(c::AbstractGray, r::Real) = gray(c) < r
 (<)(r::Real, c::AbstractGray) = r < gray(c)
-isless(g1::AbstractGray, g2::AbstractGray) = isless(gray(g1), gray(g2))
+if !hasmethod(isless, Tuple{AbstractGray,AbstractGray})  # this was moved to ColorTypes 0.10
+    isless(g1::AbstractGray, g2::AbstractGray) = isless(gray(g1), gray(g2))
+end
 isless(c::AbstractGray, r::Real) = isless(gray(c), r)
 isless(r::Real, c::AbstractGray) = isless(r, gray(c))
 

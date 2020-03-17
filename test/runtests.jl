@@ -1,17 +1,13 @@
-module ColorVectorSpaceTests
-
 using LinearAlgebra, Statistics
-using ColorVectorSpace, Colors, FixedPointNumbers, StatsBase
+using ColorVectorSpace, Colors, FixedPointNumbers
 
 using Test
 
-const var = Statistics.var
+n8sum(x,y) = Float64(N0f8(x)) + Float64(N0f8(y))
 
 macro test_colortype_approx_eq(a, b)
     :(test_colortype_approx_eq($(esc(a)), $(esc(b)), $(string(a)), $(string(b))))
 end
-
-n8sum(x,y) = Float64(N0f8(x)) + Float64(N0f8(y))
 
 function test_colortype_approx_eq(a::Colorant, b::Colorant, astr, bstr)
     @test typeof(a) == typeof(b)
@@ -22,6 +18,18 @@ function test_colortype_approx_eq(a::Colorant, b::Colorant, astr, bstr)
 end
 
 @testset "Colortypes" begin
+
+    @testset "convert" begin
+        for x in (0.5, 0.5f0, NaN, NaN32, N0f8(0.5))
+            @test @inferred(convert(Gray{typeof(x)}, x))  === @inferred(convert(Gray, x))  === Gray(x)
+            @test @inferred(convert(RGB{typeof(x)}, x))   === @inferred(convert(RGB, x))   === RGB(x, x, x)
+            # These should be fixed by a future release of ColorTypes
+            @test_broken @inferred(convert(AGray{typeof(x)}, x)) === @inferred(convert(AGray, x)) === AGray(x, 1)
+            @test_broken @inferred(convert(ARGB{typeof(x)}, x))  === @inferred(convert(ARGB, x))  === ARGB(x, x, x, 1)
+            @test_broken @inferred(convert(GrayA{typeof(x)}, x)) === @inferred(convert(GrayA, x)) === GrayA(x, 1)
+            @test_broken @inferred(convert(RGBA{typeof(x)}, x))  === @inferred(convert(RGBA, x))  === RGBA(x, x, x, 1)
+        end
+    end
 
     @testset "nan" begin
         function make_checked_nan(::Type{T}) where T
@@ -41,29 +49,30 @@ end
 
     @testset "Arithmetic with Gray" begin
         cf = Gray{Float32}(0.1)
-        @test +cf == cf
-        @test -cf == Gray(-0.1f0)
+        @test @inferred(+cf) === cf
+        @test @inferred(-cf) === Gray(-0.1f0)
         ccmp = Gray{Float32}(0.2)
-        @test 2*cf == ccmp
-        @test cf*2 == ccmp
-        @test ccmp/2 == cf
-        @test 2.0f0*cf == ccmp
-        @test_colortype_approx_eq cf*cf Gray{Float32}(0.01)
-        @test_colortype_approx_eq cf^2 Gray{Float32}(0.01)
-        @test_colortype_approx_eq cf^3.0f0 Gray{Float32}(0.001)
-        @test eltype(2.0*cf) == Float64
-        @test abs2(ccmp) == 0.2f0^2
-        @test norm(cf) == 0.1f0
-        @test sum(abs2, ccmp) == 0.2f0^2
+        @test @inferred(2*cf) === cf*2 === 2.0f0*cf === cf*2.0f0 === ccmp
+        @test @inferred(ccmp/2) === cf
+        @test @inferred(cf*cf) === Gray{Float32}(0.1f0*0.1f0)
+        @test @inferred(cf^2 ) === Gray{Float32}(0.1f0*0.1f0)
+        @test @inferred(cf^3.0f0) === Gray{Float32}(0.1f0^3.0f0)
+        @test @inferred(2.0*cf) === cf*2.0 === Gray(2.0*0.1f0)
+        # @test @inferred(abs2(ccmp)) === Gray(0.2f0^2)
+        @test norm(cf) == norm(cf, 2) == norm(gray(cf))
+        @test norm(cf, 1)   == norm(gray(cf), 1)
+        @test norm(cf, Inf) == norm(gray(cf), Inf)
+        @test @inferred(abs(cf)) === Gray(0.1f0)
+        # @test @inferred(sum(abs2, ccmp)) == Gray(0.2f0^2)
         cu = Gray{N0f8}(0.1)
-        @test 2*cu == Gray(2*cu.val)
-        @test 2.0f0*cu == Gray(2.0f0*cu.val)
+        @test @inferred(2*cu) === cu*2 === Gray(2*gray(cu))
+        @test @inferred(2.0f0*cu) === cu*2.0f0 === Gray(2.0f0*gray(cu))
         f = N0f8(0.5)
-        @test (f*cu).val ≈ f*cu.val
-        @test cf/2.0f0 == Gray{Float32}(0.05)
-        @test cu/2 == Gray(cu.val/2)
-        @test cu/0.5f0 == Gray(cu.val/0.5f0)
-        @test cf+cf == ccmp
+        @test @inferred(gray(f*cu)) === gray(cu*f) ===f*gray(cu)
+        @test @inferred(cf/2.0f0) === Gray{Float32}(0.05)
+        @test @inferred(cu/2) === Gray(cu.val/2)
+        @test @inferred(cu/0.5f0) === Gray(cu.val/0.5f0)
+        @test @inferred(cf+cf) === ccmp
         @test isfinite(cf)
         @test isfinite(Gray(true))
         @test !isinf(cf)
@@ -74,13 +83,12 @@ end
         @test !isfinite(Gray(Inf))
         @test Gray(Inf) |> isinf
         @test !isnan(Gray(Inf))
-        @test abs(Gray(0.1)) ≈ 0.1
-        @test eps(Gray{N0f8}) == Gray(eps(N0f8))  # #282
+        @test abs(Gray(0.1)) === Gray(0.1)
+        @test eps(Gray{N0f8}) === Gray(eps(N0f8))  # #282
         @test atan(Gray(0.1), Gray(0.2)) == atan(0.1, 0.2)
 
         acu = Gray{N0f8}[cu]
         acf = Gray{Float32}[cf]
-        @test +acu === acu
         @test @inferred(acu./trues(1)) == acu
         @test typeof(acu./trues(1)) == Vector{typeof(cu/true)}
         @test @inferred(ones(Int, 1)./acu) == [1/cu]
@@ -102,22 +110,23 @@ end
         @test (acf./Gray{Float32}(2))[1] ≈ 0.05f0
         @test (acu/2)[1] == Gray(gray(acu[1])/2)
         @test (acf/2)[1] ≈ Gray{Float32}(0.05f0)
-        @test sum(abs2, [cf, ccmp]) ≈ 0.05f0
+        # @test sum(abs2, [cf, ccmp]) ≈ Gray(0.05f0)
 
-        @test gray(0.8) == 0.8
+        @test gray(0.8) === 0.8
 
         a = Gray{N0f8}[0.8,0.7]
-        @test sum(a) == Gray(n8sum(0.8,0.7))
-        @test abs( var(a) - (a[1]-a[2])^2 / 2 ) <= 0.001
+        @test a == a
+        @test a === a
         @test isapprox(a, a)
+        @test sum(a) == Gray(n8sum(0.8,0.7))
+        @test abs( varmult(*, a) - (a[1]-a[2])^2 / 2 ) <= 0.001
+
         @test real(Gray{Float32}) <: Real
         @test zero(ColorTypes.Gray) == 0
         @test oneunit(ColorTypes.Gray) == 1
-        a = Gray{N0f8}[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-        @test StatsBase.histrange(a,10) == 0.1f0:0.1f0:1f0
 
         @test typeof(float(Gray{N0f16}(0.5))) <: AbstractFloat
-        @test quantile( Gray{N0f16}[0.0,0.5,1.0], 0.1) ≈ 0.10000152590218968
+        @test quantile( Gray{N0f16}[0.0,0.5,1.0], 0.1) ≈ 0.1 atol=eps(N0f16)
         @test middle(Gray(0.2)) === Gray(0.2)
         @test middle(Gray(0.2), Gray(0.4)) === Gray((0.2+0.4)/2)
 
@@ -248,9 +257,9 @@ end
         @test !isfinite(RGB(1, Inf, 0.5))
         @test isinf(RGB(1, Inf, 0.5))
         @test !isnan(RGB(1, Inf, 0.5))
-        @test abs(RGB(0.1,0.2,0.3)) ≈ 0.6
-        @test sum(abs2, RGB(0.1,0.2,0.3)) ≈ 0.14
-        @test norm(RGB(0.1,0.2,0.3)) ≈ sqrt(0.14)
+        @test abs(RGB(0.1,0.2,0.3)) == RGB(0.1,0.2,0.3)
+        # @test sum(abs2, RGB(0.1,0.2,0.3)) == RGB(0.1^2,0.2^2,0.3^2)
+        @test norm(RGB(0.1,0.2,0.3)) ≈ sqrt(0.14)/sqrt(3)
 
         acu = RGB{N0f8}[cu]
         acf = RGB{Float32}[cf]
@@ -284,6 +293,18 @@ end
         @test RGB24(1,0,0)/2.0 === RGB(0.5,0,0)
         # issue #133
         @test RGB24(1, 0, 0) + RGB24(0, 0, 1) === RGB24(1, 0, 1)
+
+        # Multiplication
+        @test_throws MethodError cf*cf
+        cf64 = mapc(Float64, cf)
+        @test cf ⋅ cf   === (red(cf)^2 + green(cf)^2 + blue(cf)^2)/3
+        @test cf ⋅ cf64 === (red(cf)*red(cf64) + green(cf)*green(cf64) + blue(cf)*blue(cf64))/3
+        @test cf ⊙ cf   === RGB(red(cf)^2, green(cf)^2, blue(cf)^2)
+        @test cf ⊙ cf64 === RGB(red(cf)*red(cf64), green(cf)*green(cf64), blue(cf)*blue(cf64))
+        c2 = rand(RGB{Float64})
+        @test Matrix(cf ⊗ c2) == [red(cf)*red(c2)   red(cf)*green(c2)   red(cf)*blue(c2);
+                                  green(cf)*red(c2) green(cf)*green(c2) green(cf)*blue(c2);
+                                  blue(cf)*red(c2)  blue(cf)*green(c2)  blue(cf)*blue(c2)]
     end
 
     @testset "Arithemtic with RGBA" begin
@@ -324,7 +345,7 @@ end
         @test !isfinite(RGBA(0.2, 1, 0.5, Inf))
         @test RGBA(0.2, 1, 0.5, Inf) |> isinf
         @test !isnan(RGBA(0.2, 1, 0.5, Inf))
-        @test abs(RGBA(0.1,0.2,0.3,0.2)) ≈ 0.8
+        @test abs(RGBA(0.1,0.2,0.3,0.2)) === RGBA(0.1,0.2,0.3,0.2)
 
         acu = RGBA{N0f8}[cu]
         acf = RGBA{Float32}[cf]
@@ -396,12 +417,34 @@ end
 
     @testset "Colors issue #326" begin
         A = rand(RGB{N0f8}, 2, 2)
-        if VERSION >= v"1.5"
-            @test_broken @inferred mean(A) == mean(map(c->mapc(FixedPointNumbers.Treduce, c), A))
-        else
-            @test @inferred mean(A) == mean(map(c->mapc(FixedPointNumbers.Treduce, c), A))
-        end
+        @test @inferred(mean(A)) == mean(map(c->mapc(FixedPointNumbers.Treduce, c), A))
     end
-end
+
+    @testset "Equivalence" begin
+        x = 0.4
+        g = Gray(x)
+        c = RGB(g)
+        for p in (0, 1, 2, Inf)
+            @test norm(x, p) == norm(g, p) ≈ norm(c, p)
+        end
+        @test dot(x, x) == dot(g, g) ≈ dot(c, c)
+    end
+
+    @testset "varmult" begin
+        cs = [RGB(0.2, 0.3, 0.4), RGB(0.5, 0.3, 0.2)]
+        @test varmult(⋅, cs) ≈ 2*(0.15^2 + 0.1^2)/3    # the /3 is for the 3 color channels, i.e., equivalence
+        @test varmult(⋅, cs; corrected=false) ≈ (0.15^2 + 0.1^2)/3
+        @test varmult(⋅, cs; mean=RGB(0, 0, 0)) ≈ (0.2^2+0.3^2+0.4^2 + 0.5^2+0.3^2+0.2^2)/3
+        @test varmult(⊙, cs) ≈ 2*RGB(0.15^2, 0, 0.1^2)
+        @test Matrix(varmult(⊗, cs)) ≈ 2*[0.15^2 0 -0.1*0.15; 0 0 0; -0.1*0.15 0 0.1^2]
+
+        cs = [RGB(0.1, 0.2,  0.3)  RGB(0.3, 0.5, 0.3);
+              RGB(0.2, 0.21, 0.33) RGB(0.4, 0.51, 0.33);
+              RGB(0.3, 0.22, 0.36) RGB(0.5, 0.52, 0.36)]
+        v1 = RGB(0.1^2, 0.15^2, 0)
+        @test varmult(⊙, cs, dims=2) ≈ 2*[v1, v1, v1]
+        v2 = RGB(0.1^2, 0.01^2, 0.03^2)
+        @test varmult(⊙, cs, dims=1) ≈ [v2 v2]
+    end
 
 end

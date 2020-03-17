@@ -1,20 +1,17 @@
 module ColorVectorSpace
 
 using Colors, FixedPointNumbers, SpecialFunctions
+using TensorCore
+import TensorCore: ⊙, ⊗
+
+using FixedPointNumbers: ShorterThanInt
 
 import Base: ==, +, -, *, /, ^, <, ~
-import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
-    isnan, isless, length, mapreduce, oneunit,
+import Base: abs, abs2, clamp, convert, copy, div, eps, float,
+    isfinite, isinf, isnan, isless, length, mapreduce, oneunit,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
     mod, rem, atan, hypot, max, min, real, typemin, typemax
-import LinearAlgebra: norm
-import StatsBase: varm
-import SpecialFunctions: gamma, lgamma, lfact
-import Statistics: middle
-
-export nan
-
-# The unaryOps
+# More unaryOps (mostly math functions)
 import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   asin, acos, atan, asinh, acosh, atanh,
                   sec, csc, cot, asec, acsc, acot,
@@ -24,49 +21,38 @@ import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   asind, atand, rad2deg, deg2rad,
                   log, log2, log10, log1p, exponent, exp,
                   exp2, exp10, expm1, cbrt, sqrt,
-                  significand,
-                  frexp, modf,
-                  float
+                  significand, frexp, modf
+import LinearAlgebra: norm, ⋅, dot, promote_leaf_eltypes  # norm1, norm2, normInf
+import SpecialFunctions: gamma, lgamma, lfact
+using Statistics
+import Statistics: middle, _mean_promote
 
-export dotc
-
-# TODO: we get rid of these definitions or move them to ColorTypes.jl
-TransparentRGBFloat{C<:AbstractRGB,T<:AbstractFloat} = TransparentColor{C,T,4}
-TransparentGrayFloat{C<:AbstractGray,T<:AbstractFloat} = TransparentColor{C,T,2}
-TransparentRGBNormed{C<:AbstractRGB,T<:Normed} = TransparentColor{C,T,4}
-TransparentGrayNormed{C<:AbstractGray,T<:Normed} = TransparentColor{C,T,2}
+export RGBRGB, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm, varmult
 
 MathTypes{T,C} = Union{AbstractRGB{T},TransparentRGB{C,T},AbstractGray{T},TransparentGray{C,T}}
 
-# convert(RGB{Float32}, NaN) doesn't and shouldn't work, so we need to reintroduce nan
-nan(::Type{T}) where {T<:AbstractFloat} = convert(T, NaN)
-nan(::Type{C}) where {C<:MathTypes} = _nan(eltype(C), C)
-_nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:AbstractGray} = (x = convert(T, NaN); C(x))
-_nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:TransparentGray} = (x = convert(T, NaN); C(x,x))
-_nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:AbstractRGB} = (x = convert(T, NaN); C(x,x,x))
-_nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:TransparentRGB} = (x = convert(T, NaN); C(x,x,x,x))
+## Version compatibility with ColorTypes
 
-## Generic algorithms
-mapreduce(f, op::Union{typeof(&), typeof(|)}, a::MathTypes) = f(a)  # ambiguity
-mapreduce(f, op, a::MathTypes) = f(a)
-Base.add_sum(c1::MathTypes,c2::MathTypes) = mapc(Base.add_sum, c1, c2)
-Base.reduce_first(::typeof(Base.add_sum), c::MathTypes) = mapc(x->Base.reduce_first(Base.add_sum, x), c)
-function Base.reduce_empty(::typeof(Base.add_sum), ::Type{T}) where {T<:MathTypes}
-    z = Base.reduce_empty(Base.add_sum, eltype(T))
-    return zero(base_colorant_type(T){typeof(z)})
+if !hasmethod(zero, (Type{AGray{N0f8}},))
+    zero(::Type{C}) where {C<:TransparentGray} = C(0,0)
+    zero(::Type{C}) where {C<:AbstractRGB}     = C(0,0,0)
+    zero(::Type{C}) where {C<:TransparentRGB}  = C(0,0,0,0)
+    zero(p::Colorant) = zero(typeof(p))
 end
 
-for f in (:trunc, :floor, :round, :ceil, :eps, :bswap)
-    @eval $f(g::Gray{T}) where {T} = Gray{T}($f(gray(g)))
+if !hasmethod(one, (Gray{N0f8},))
+    Base.one(::Type{C}) where {C<:AbstractGray}    = C(1)
+    Base.one(::Type{C}) where {C<:TransparentGray} = C(1,1)
+    Base.one(::Type{C}) where {C<:AbstractRGB}     = C(1,1,1)
+    Base.one(::Type{C}) where {C<:TransparentRGB}  = C(1,1,1,1)
+    Base.one(p::Colorant) = one(typeof(p))
 end
-eps(::Type{Gray{T}}) where {T} = Gray(eps(T))
 
-for f in (:trunc, :floor, :round, :ceil)
-    @eval $f(::Type{T}, g::Gray) where {T<:Integer} = Gray{T}($f(T, gray(g)))
-end
-
-for f in (:mod, :rem, :mod1)
-    @eval $f(x::Gray, m::Gray) = Gray($f(gray(x), gray(m)))
+if !hasmethod(oneunit, (Type{AGray{N0f8}},))
+    oneunit(::Type{C}) where {C<:TransparentGray} = C(1,1)
+    oneunit(::Type{C}) where {C<:AbstractRGB}     = C(1,1,1)
+    oneunit(::Type{C}) where {C<:TransparentRGB}  = C(1,1,1,1)
+    oneunit(p::Colorant) = oneunit(typeof(p))
 end
 
 # Real values are treated like grays
@@ -74,24 +60,27 @@ if !hasmethod(gray, (Number,))
     ColorTypes.gray(x::Real) = x
 end
 
-dotc(x::T, y::T) where {T<:Real} = acc(x)*acc(y)
-dotc(x::Real, y::Real) = dotc(promote(x, y)...)
+## Traits and key utilities
 
 # Return types for arithmetic operations
 multype(::Type{A}, ::Type{B}) where {A,B} = coltype(typeof(zero(A)*zero(B)))
 sumtype(::Type{A}, ::Type{B}) where {A,B} = coltype(typeof(zero(A)+zero(B)))
 divtype(::Type{A}, ::Type{B}) where {A,B} = coltype(typeof(zero(A)/oneunit(B)))
 powtype(::Type{A}, ::Type{B}) where {A,B} = coltype(typeof(zero(A)^zero(B)))
-multype(a::Colorant, b::Colorant) = multype(eltype(a),eltype(b))
-sumtype(a::Colorant, b::Colorant) = sumtype(eltype(a),eltype(b))
-divtype(a::Colorant, b::Colorant) = divtype(eltype(a),eltype(b))
-powtype(a::Colorant, b::Colorant) = powtype(eltype(a),eltype(b))
+multype(a::Colorant, b::Colorant) = coltype(multype(eltype(a),eltype(b)))
+sumtype(a::Colorant, b::Colorant) = coltype(sumtype(eltype(a),eltype(b)))
+divtype(a::Colorant, b::Colorant) = coltype(divtype(eltype(a),eltype(b)))
+powtype(a::Colorant, b::Colorant) = coltype(powtype(eltype(a),eltype(b)))
 
 coltype(::Type{T}) where {T<:Fractional} = T
-coltype(::Type{T}) where {T}             = Float64
+coltype(::Type{T}) where {T<:Number}     = floattype(T)
 
-acctype(::Type{T}) where {T<:FixedPoint} = FixedPointNumbers.floattype(T)
-acctype(::Type{T}) where {T<:Number} = T
+acctype(::Type{T}) where {T<:FixedPoint}        = floattype(T)
+acctype(::Type{T}) where {T<:ShorterThanInt}    = Int
+acctype(::Type{Rational{T}}) where {T<:Integer} = typeof(zero(T)/oneunit(T))
+acctype(::Type{T}) where {T<:Real}              = T
+
+acctype(::Type{T1}, ::Type{T2}) where {T1,T2} = acctype(promote_type(T1, T2))
 
 acc(x::Number) = convert(acctype(typeof(x)), x)
 
@@ -118,6 +107,49 @@ parametric(::Type{Gray24}, ::Type{N0f8}) = Gray24
 parametric(::Type{RGB24}, ::Type{N0f8}) = RGB24
 parametric(::Type{AGray32}, ::Type{N0f8}) = AGray32
 parametric(::Type{ARGB32}, ::Type{N0f8}) = ARGB32
+
+# Useful for leveraging iterator algorithms. Don't use this externally, as the implementation may change.
+channels(c::AbstractGray)    = (gray(c),)
+channels(c::TransparentGray) = (gray(c), alpha(c))
+channels(c::AbstractRGB)     = (red(c), green(c), blue(c))
+channels(c::TransparentRGB)  = (red(c), green(c), blue(c), alpha(c))
+
+## Math on colors and color types
+
+nan(::Type{T}) where {T<:AbstractFloat} = convert(T, NaN)
+nan(::Type{C}) where {C<:MathTypes} = _nan(eltype(C), C)
+_nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:AbstractGray} = (x = convert(T, NaN); C(x))
+_nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:TransparentGray} = (x = convert(T, NaN); C(x,x))
+_nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:AbstractRGB} = (x = convert(T, NaN); C(x,x,x))
+_nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:TransparentRGB} = (x = convert(T, NaN); C(x,x,x,x))
+
+
+
+## Generic algorithms
+mapreduce(f, op::Union{typeof(&), typeof(|)}, a::MathTypes) = f(a)  # ambiguity
+mapreduce(f, op, a::MathTypes) = f(a)
+Base.add_sum(c1::MathTypes,c2::MathTypes) = mapc(Base.add_sum, c1, c2)
+Base.reduce_first(::typeof(Base.add_sum), c::MathTypes) = mapc(x->Base.reduce_first(Base.add_sum, x), c)
+function Base.reduce_empty(::typeof(Base.add_sum), ::Type{T}) where {T<:MathTypes}
+    z = Base.reduce_empty(Base.add_sum, eltype(T))
+    return zero(base_colorant_type(T){typeof(z)})
+end
+
+for f in (:trunc, :floor, :round, :ceil, :eps, :bswap)
+    @eval $f(g::Gray{T}) where {T} = Gray{T}($f(gray(g)))
+end
+eps(::Type{Gray{T}}) where {T} = Gray(eps(T))
+
+for f in (:trunc, :floor, :round, :ceil)
+    @eval $f(::Type{T}, g::Gray) where {T<:Integer} = Gray{T}($f(T, gray(g)))
+end
+
+for f in (:mod, :rem, :mod1)
+    @eval $f(x::Gray, m::Gray) = Gray($f(gray(x), gray(m)))
+end
+
+dotc(x::T, y::T) where {T<:Real} = acc(x)*acc(y)
+dotc(x::Real, y::Real) = dotc(promote(x, y)...)
 
 ## Math on Colors. These implementations encourage inlining and,
 ## for the case of Normed types, nearly halve the number of multiplications (for RGB)
@@ -159,32 +191,33 @@ end
 (/)(c::AbstractRGB, f::Integer) = (one(eltype(c))/f)*c
 (/)(c::TransparentRGB, f::Integer) = (one(eltype(c))/f)*c
 
+
+# New multiplication operators
+(⋅)(x::AbstractRGB, y::AbstractRGB)  = (T = acctype(eltype(x), eltype(y)); T(red(x))*T(red(y)) + T(green(x))*T(green(y)) + T(blue(x))*T(blue(y)))/3
+(⊙)(x::C, y::C) where C<:AbstractRGB = base_color_type(C)(red(x)*red(y), green(x)*green(y), blue(x)*blue(y))
+(⊙)(x::AbstractRGB, y::AbstractRGB)  = ⊙(promote(x, y)...)
+# ⊗ defined below
+
 isfinite(c::Colorant{T}) where {T<:Normed} = true
 isfinite(c::Colorant) = mapreducec(isfinite, &, true, c)
 isnan(c::Colorant{T}) where {T<:Normed} = false
 isnan(c::Colorant) = mapreducec(isnan, |, false, c)
 isinf(c::Colorant{T}) where {T<:Normed} = false
 isinf(c::Colorant) = mapreducec(isinf, |, false, c)
-abs(c::AbstractRGB) = abs(red(c))+abs(green(c))+abs(blue(c)) # should this have a different name?
-abs(c::AbstractRGB{T}) where {T<:Normed} = Float32(red(c))+Float32(green(c))+Float32(blue(c)) # should this have a different name?
-abs(c::TransparentRGB) = abs(red(c))+abs(green(c))+abs(blue(c))+abs(alpha(c)) # should this have a different name?
-abs(c::TransparentRGB{T}) where {T<:Normed} = Float32(red(c))+Float32(green(c))+Float32(blue(c))+Float32(alpha(c)) # should this have a different name?
-abs2(c::AbstractRGB) = red(c)^2+green(c)^2+blue(c)^2
-abs2(c::AbstractRGB{T}) where {T<:Normed} = Float32(red(c))^2+Float32(green(c))^2+Float32(blue(c))^2
-abs2(c::TransparentRGB) = (ret = abs2(color(c)); ret + convert(typeof(ret), alpha(c))^2)
-norm(c::AbstractRGB) = sqrt(abs2(c))
-norm(c::TransparentRGB) = sqrt(abs2(c))
+abs(c::MathTypes) = mapc(abs, c)       # if we make abs2 return a scalar, this could be confusing
+# abs2(c::MathTypes) = mapc(abs2, c)   # or mapreducec(abs2, +, float(zero(eltype(c))), c); or is it better to make this undefined?
+norm(c::MathTypes, p::Real=2) = (cc = channels(c); norm(cc, p)/(p == 0 ? length(cc) : length(cc)^(1/p)))
+# norm1(c::MathTypes)   =      mapreducec(abs∘float,  +,   float(zero(eltype(c))), c)
+# norm2(c::MathTypes)   = sqrt(mapreducec(abs2∘float, +,   float(zero(eltype(c))), c))
+# normInf(c::MathTypes) =      mapreducec(abs,        max, zero(eltype(c)),        c)
 
-oneunit(::Type{C}) where {C<:AbstractRGB}     = C(1,1,1)
-oneunit(::Type{C}) where {C<:TransparentRGB}  = C(1,1,1,1)
+# function Base.rtoldefault(::Union{C1,Type{C1}}, ::Union{C2,Type{C2}}, atol::Real) where {C1<:MathTypes,C2<:MathTypes}
+#     T1, T2 = eltype(C1), eltype(C2)
+#     @show T1, T2
+#     return Base.rtoldefault(eltype(C1), eltype(C2), atol)
+# end
 
-zero(::Type{C}) where {C<:AbstractRGB}    = C(0,0,0)
-zero(::Type{C}) where {C<:TransparentRGB} = C(0,0,0,0)
-zero(::Type{C}) where {C<:YCbCr} = C(0,0,0)
-zero(::Type{C}) where {C<:HSV} = C(0,0,0)
-oneunit(p::Colorant) = oneunit(typeof(p))
-Base.one(c::Colorant) = Base.one(typeof(c))
-zero(p::Colorant) = zero(typeof(p))
+promote_leaf_eltypes(x::Union{AbstractArray{T},Tuple{T,Vararg{T}}}) where {T<:MathTypes} = eltype(T)
 
 # These constants come from squaring the conversion to grayscale
 # (rec601 luma), and normalizing
@@ -212,18 +245,20 @@ const unaryOps = (:~, :conj, :abs,
                   :(SpecialFunctions.besselj0), :(SpecialFunctions.besselj1), :(SpecialFunctions.bessely0), :(SpecialFunctions.bessely1),
                   :(SpecialFunctions.eta), :(SpecialFunctions.zeta), :(SpecialFunctions.digamma))
 for op in unaryOps
-    @eval ($op)(c::AbstractGray) = $op(gray(c))
+    @eval ($op)(c::AbstractGray) = Gray($op(gray(c)))
 end
 
 middle(c::AbstractGray) = arith_colorant_type(c)(middle(gray(c)))
 middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(x), gray(y)))
+
+_mean_promote(x::MathTypes, y::MathTypes) = mapc(FixedPointNumbers.Treduce, y)
 
 (*)(f::Real, c::AbstractGray) = arith_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c))
 (*)(f::Real, c::TransparentGray) = arith_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c), f*alpha(c))
 (*)(c::AbstractGray, f::Real) = (*)(f, c)
 (*)(c::TransparentGray, f::Real) = (*)(f, c)
 (/)(c::AbstractGray, f::Real) = (one(f)/f)*c
-(/)(n::Number, c::AbstractGray) = n/gray(c)
+(/)(n::Number, c::AbstractGray) = base_color_type(c)(n/gray(c))
 (/)(c::TransparentGray, f::Real) = (one(f)/f)*c
 (/)(c::AbstractGray, f::Integer) = (one(eltype(c))/f)*c
 (/)(c::TransparentGray, f::Integer) = (one(eltype(c))/f)*c
@@ -238,12 +273,20 @@ middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(
 (+)(c::TransparentGray) = c
 (-)(c::AbstractGray) = typeof(c)(-gray(c))
 (-)(c::TransparentGray) = typeof(c)(-gray(c),-alpha(c))
-(/)(a::AbstractGray, b::AbstractGray) = gray(a)/gray(b)
-div(a::AbstractGray, b::AbstractGray) = div(gray(a), gray(b))
-(+)(a::AbstractGray, b::Number) = gray(a)+b
-(-)(a::AbstractGray, b::Number) = gray(a)-b
-(+)(a::Number, b::AbstractGray) = a+gray(b)
-(-)(a::Number, b::AbstractGray) = a-gray(b)
+(/)(a::C, b::C) where C<:AbstractGray = base_color_type(C)(gray(a)/gray(b))
+(/)(a::AbstractGray, b::AbstractGray) = /(promote(a, b)...)
+div(a::C, b::C) where C<:AbstractGray = base_color_type(C)(div(gray(a), gray(b)))
+div(a::AbstractGray, b::AbstractGray) = div(promote(a, b)...)
+(+)(a::AbstractGray, b::Number) = base_color_type(a)(gray(a)+b)
+(+)(a::Number, b::AbstractGray) = b+a
+(-)(a::AbstractGray, b::Number) = base_color_type(a)(gray(a)-b)
+(-)(a::Number, b::AbstractGray) = base_color_type(b)(a-gray(b))
+
+(⋅)(x::AbstractGray, y::AbstractGray) = gray(x)*gray(y)
+(⊙)(x::C, y::C) where C<:AbstractGray = base_color_type(C)(gray(x)*gray(y))
+(⊙)(x::AbstractGray, y::AbstractGray) = ⊙(promote(x, y)...)
+(⊗)(x::AbstractGray, y::AbstractGray) = ⊙(x, y)
+
 max(a::T, b::T) where {T<:AbstractGray} = T(max(gray(a),gray(b)))
 max(a::AbstractGray, b::AbstractGray) = max(promote(a,b)...)
 max(a::Number, b::AbstractGray) = max(promote(a,b)...)
@@ -253,42 +296,35 @@ min(a::AbstractGray, b::AbstractGray) = min(promote(a,b)...)
 min(a::Number, b::AbstractGray) = min(promote(a,b)...)
 min(a::AbstractGray, b::Number) = min(promote(a,b)...)
 
-norm(c::AbstractGray) = abs(gray(c))
-abs(c::TransparentGray) = abs(gray(c))+abs(alpha(c)) # should this have a different name?
-abs(c::TransparentGrayNormed) = Float32(gray(c)) + Float32(alpha(c)) # should this have a different name?
-abs2(c::AbstractGray) = gray(c)^2
-abs2(c::AbstractGray{T}) where {T<:Normed} = Float32(gray(c))^2
-abs2(c::TransparentGray) = gray(c)^2+alpha(c)^2
-abs2(c::TransparentGrayNormed) = Float32(gray(c))^2 + Float32(alpha(c))^2
-atan(x::Gray, y::Gray) = atan(convert(Real, x), convert(Real, y))
-hypot(x::Gray, y::Gray) = hypot(convert(Real, x), convert(Real, y))
-norm(c::TransparentGray) = sqrt(abs2(c))
+atan(x::AbstractGray, y::AbstractGray)  = atan(gray(x), gray(y))
+hypot(x::AbstractGray, y::AbstractGray) = hypot(gray(x), gray(y))
 
-(<)(g1::AbstractGray, g2::AbstractGray) = gray(g1) < gray(g2)
-(<)(c::AbstractGray, r::Real) = gray(c) < r
-(<)(r::Real, c::AbstractGray) = r < gray(c)
+if !hasmethod(<, Tuple{AbstractGray,AbstractGray})  # planned for ColorTypes 0.11
+    (<)(g1::AbstractGray, g2::AbstractGray) = gray(g1) < gray(g2)
+    (<)(c::AbstractGray, r::Real) = gray(c) < r
+    (<)(r::Real, c::AbstractGray) = r < gray(c)
+end
 if !hasmethod(isless, Tuple{AbstractGray,AbstractGray})  # this was moved to ColorTypes 0.10
     isless(g1::AbstractGray, g2::AbstractGray) = isless(gray(g1), gray(g2))
 end
-isless(c::AbstractGray, r::Real) = isless(gray(c), r)
-isless(r::Real, c::AbstractGray) = isless(r, gray(c))
-
-function Base.isapprox(x::AbstractArray{Cx},
-                       y::AbstractArray{Cy};
-                       rtol::Real=Base.rtoldefault(eltype(Cx),eltype(Cy),0),
-                       atol::Real=0,
-                       norm::Function=norm) where {Cx<:MathTypes,Cy<:MathTypes}
-    d = norm(x - y)
-    if isfinite(d)
-        return d <= atol + rtol*max(norm(x), norm(y))
-    else
-        # Fall back to a component-wise approximate comparison
-        return all(ab -> isapprox(ab[1], ab[2]; rtol=rtol, atol=atol), zip(x, y))
-    end
+if !hasmethod(isless, Tuple{AbstractGray,Real})  # planned for ColorTypes 0.11
+    isless(c::AbstractGray, r::Real) = isless(gray(c), r)
+    isless(r::Real, c::AbstractGray) = isless(r, gray(c))
 end
 
-zero(::Type{C}) where {C<:TransparentGray} = C(0,0)
-oneunit(::Type{C}) where {C<:TransparentGray} = C(1,1)
+# function Base.isapprox(x::AbstractArray{Cx},
+#                        y::AbstractArray{Cy};
+#                        rtol::Real=Base.rtoldefault(eltype(Cx),eltype(Cy),0),
+#                        atol::Real=0,
+#                        norm::Function=norm) where {Cx<:MathTypes,Cy<:MathTypes}
+#     d = norm(x - y)
+#     if isfinite(d)
+#         return d <= atol + rtol*max(norm(x), norm(y))
+#     else
+#         # Fall back to a component-wise approximate comparison
+#         return all(ab -> isapprox(ab[1], ab[2]; rtol=rtol, atol=atol), zip(x, y))
+#     end
+# end
 
 dotc(x::T, y::T) where {T<:AbstractGray} = acc(gray(x))*acc(gray(y))
 dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
@@ -299,12 +335,6 @@ float(::Type{T}) where {T<:Gray} = typeof(float(zero(T)))
 (+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)
 (-)(a::MathTypes, b::MathTypes) = (-)(promote(a, b)...)
 
-# Arrays---necessary methods
-+(A::AbstractArray{C}) where {C<:MathTypes} = A
-+(A::Array{C}) where {C<:MathTypes} = A
-
-varm(v::AbstractArray{C}, s::AbstractGray; corrected::Bool=true) where {C<:AbstractGray} =
-        varm(map(gray,v),gray(s); corrected=corrected)
 real(::Type{C}) where {C<:AbstractGray} = real(eltype(C))
 
 # To help type inference
@@ -316,46 +346,109 @@ typemax(::Type{T}) where {T<:ColorTypes.AbstractGray} = T(typemax(eltype(T)))
 typemin(::T) where {T<:ColorTypes.AbstractGray} = T(typemin(eltype(T)))
 typemax(::T) where {T<:ColorTypes.AbstractGray} = T(typemax(eltype(T)))
 
-include("precompile.jl")
-_precompile_()
+## RGB tensor products
 
-## Deprecations
+"""
+    RGBRGB(rr, gr, br, rg, gg, bg, rb, gb, bb)
 
-@deprecate (+)(A::AbstractArray{CV}, b::AbstractRGB) where {CV<:AbstractRGB} (.+)(A, b)
-@deprecate (+)(b::AbstractRGB, A::AbstractArray{CV}) where {CV<:AbstractRGB} (.+)(b, A)
-@deprecate (-)(A::AbstractArray{CV}, b::AbstractRGB) where {CV<:AbstractRGB} (.-)(A, b)
-@deprecate (-)(b::AbstractRGB, A::AbstractArray{CV}) where {CV<:AbstractRGB} (.-)(b, A)
-@deprecate (*)(A::AbstractArray{T}, b::AbstractRGB) where {T<:Number} A.*b
-@deprecate (*)(b::AbstractRGB, A::AbstractArray{T}) where {T<:Number} A.*b
+Represent the [tensor product](https://en.wikipedia.org/wiki/Tensor_product) of two RGB values.
 
-@deprecate (+)(A::AbstractArray{CV}, b::TransparentRGB) where {CV<:TransparentRGB} (.+)(A, b)
-@deprecate (+)(b::TransparentRGB, A::AbstractArray{CV}) where {CV<:TransparentRGB} (.+)(b, A)
-@deprecate (-)(A::AbstractArray{CV}, b::TransparentRGB) where {CV<:TransparentRGB} (.-)(A, b)
-@deprecate (-)(b::TransparentRGB, A::AbstractArray{CV}) where {CV<:TransparentRGB} (.-)(b, A)
-@deprecate (*)(A::AbstractArray{T}, b::TransparentRGB) where {T<:Number} A.*b
-@deprecate (*)(b::TransparentRGB, A::AbstractArray{T}) where {T<:Number} A.*b
+# Example
 
-@deprecate (+)(A::AbstractArray{CV}, b::AbstractGray) where {CV<:AbstractGray} (.+)(A, b)
-@deprecate (+)(b::AbstractGray, A::AbstractArray{CV}) where {CV<:AbstractGray} (.+)(b, A)
-@deprecate (-)(A::AbstractArray{CV}, b::AbstractGray) where {CV<:AbstractGray} (.-)(A, b)
-@deprecate (-)(b::AbstractGray, A::AbstractArray{CV}) where {CV<:AbstractGray} (.-)(b, A)
-@deprecate (*)(A::AbstractArray{T}, b::AbstractGray) where {T<:Number} A.*b
-@deprecate (*)(b::AbstractGray, A::AbstractArray{T}) where {T<:Number} A.*b
-@deprecate (/)(A::AbstractArray{C}, b::AbstractGray) where {C<:AbstractGray} A./b
+```jldoctest
+julia> a, b = RGB(0.2f0, 0.3f0, 0.5f0), RGB(0.77f0, 0.11f0, 0.22f0)
+(RGB{Float32}(0.2f0,0.3f0,0.5f0), RGB{Float32}(0.77f0,0.11f0,0.22f0))
 
-@deprecate (+)(A::AbstractArray{CV}, b::TransparentGray) where {CV<:TransparentGray} (.+)(A, b)
-@deprecate (+)(b::TransparentGray, A::AbstractArray{CV}) where {CV<:TransparentGray} (.+)(b, A)
-@deprecate (-)(A::AbstractArray{CV}, b::TransparentGray) where {CV<:TransparentGray} (.-)(A, b)
-@deprecate (-)(b::TransparentGray, A::AbstractArray{CV}) where {CV<:TransparentGray} (.-)(b, A)
-@deprecate (*)(A::AbstractArray{T}, b::TransparentGray) where {T<:Number} A.*b
-@deprecate (*)(b::TransparentGray, A::AbstractArray{T}) where {T<:Number} A.*b
+julia> a ⊗ b
+RGBRGB{Float32}(
+ 0.154f0  0.022f0  0.044f0
+ 0.231f0  0.033f0  0.066f0
+ 0.385f0  0.055f0  0.11f0 )
+"""
+struct RGBRGB{T}
+    rr::T
+    gr::T
+    br::T
+    rg::T
+    gg::T
+    bg::T
+    rb::T
+    gb::T
+    bb::T
+end
+Base.eltype(::Type{RGBRGB{T}}) where T = T
+Base.Matrix{T}(p::RGBRGB) where T = T[p.rr p.rg p.rb;
+                                      p.gr p.gg p.gb;
+                                      p.br p.bg p.bb]
+Base.Matrix(p::RGBRGB{T}) where T = Matrix{T}(p)
 
-## Deprecations
+function Base.show(io::IO, p::RGBRGB)
+    print(io, "RGBRGB{", eltype(p), "}(\n")
+    Base.print_matrix(io, Matrix(p))
+    print(io, ')')
+end
 
-## From 2020-Sept-9
-# Since ImageContrastAdjustment is now doing its own binning, I think this can be safely deprecated and we can eliminate
-# the dependency on StatsBase.
-import StatsBase: histrange
-@deprecate histrange(v::AbstractArray{Gray{T}}, n::Integer) where {T} histrange(convert(Array{Float32}, map(gray, v)), n, :right)
++(a::RGBRGB) = a
+-(a::RGBRGB) = RGB(-a.rr, -a.gr, -a.br, -a.rg, -a.gg, -a.bg, -a.rb, -a.gb, -a.bb)
++(a::RGBRGB, b::RGBRGB) = RGBRGB(a.rr + b.rr, a.gr + b.gr, a.br + b.br,
+                                 a.rg + b.rg, a.gg + b.gg, a.bg + b.bg,
+                                 a.rb + b.rb, a.gb + b.gb, a.bb + b.bb)
+-(a::RGBRGB, b::RGBRGB) = +(a, -b)
+*(α::Real, a::RGBRGB) = RGBRGB(α*a.rr, α*a.gr, α*a.br, α*a.rg, α*a.gg, α*a.bg, α*a.rb, α*a.gb, α*a.bb)
+*(a::RGBRGB, α::Real) = α*a
+/(a::RGBRGB, α::Real) = (1/α)*a
+
+function ⊗(a::AbstractRGB, b::AbstractRGB)
+    ar, ag, ab = red(a), green(a), blue(a)
+    br, bg, bb = red(b), green(b), blue(b)
+    agbr, abbg, arbb, abbr, arbg, agbb = ag*br, ab*bg, ar*bb, ab*br, ar*bg, ag*bb
+    return RGBRGB(ar*br, agbr, abbr, arbg, ag*bg, abbg, arbb, agbb, ab*bb)
+end
+
+"""
+    varmult(op, itr; corrected::Bool=true, mean=Statistics.mean(itr), dims=:)
+
+Compute the variance of elements of `itr`, using `op` as the multiplication operator.
+The keyword arguments behave identically to those of `Statistics.var`.
+
+# Example
+
+```julia
+julia> cs = [RGB(0.2, 0.3, 0.4), RGB(0.5, 0.3, 0.2)]
+2-element Array{RGB{Float64},1} with eltype RGB{Float64}:
+ RGB{Float64}(0.2,0.3,0.4)
+ RGB{Float64}(0.5,0.3,0.2)
+
+julia> varmult(⋅, cs)
+0.021666666666666667
+
+julia> varmult(⊙, cs)
+RGB{Float64}(0.045,0.0,0.020000000000000004)
+
+julia> varmult(⊗, cs)
+RGBRGB{Float64}(
+  0.045  0.0  -0.03
+  0.0    0.0   0.0
+ -0.03   0.0   0.020000000000000004)
+```
+"""
+function varmult(op, itr; corrected::Bool=true, dims=:, mean=Statistics.mean(itr; dims=dims))
+    if dims === (:)
+        v = mapreduce(c->(Δc = c-mean; op(Δc, Δc)), +, itr; dims=dims)
+        n = length(itr)
+    else
+        # TODO: avoid temporary creation
+        v = mapreduce(Δc->op(Δc, Δc), +, itr .- mean; dims=dims)
+        n = length(itr) // length(v)
+    end
+    return v / (corrected ? max(1, n-1) : max(1, n))
+end
+
+## Precompilation
+
+if Base.VERSION >= v"1.4.2"
+    include("precompile.jl")
+    _precompile_()
+end
 
 end

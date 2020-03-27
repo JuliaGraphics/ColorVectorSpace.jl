@@ -16,7 +16,7 @@ ColorTypes = "0.8, 0.9"
 Colors = "0.9, 0.10, 0.11"
 FixedPointNumbers = "0.6, 0.7"
 SpecialFunctions = "0.7, 0.8, 0.9, 0.10"
-StatsBase = "0.28, 0.29, 0.30, 0.31, 0.32"
+StatsBase = "0.28, 0.29, 0.30, 0.31, 0.32, 0.33"
 julia = "1"
 
 [extras]

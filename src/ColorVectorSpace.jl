@@ -111,6 +111,12 @@ arith_colorant_type(::Type{AGray32}) = AGray
 arith_colorant_type(::Type{RGB24}) = RGB
 arith_colorant_type(::Type{ARGB32}) = ARGB
 
+parametric(::Type{C}, ::Type{T}) where {C,T} = C{T}
+parametric(::Type{Gray24}, ::Type{N0f8}) = Gray24
+parametric(::Type{RGB24}, ::Type{N0f8}) = RGB24
+parametric(::Type{AGray32}, ::Type{N0f8}) = AGray32
+parametric(::Type{ARGB32}, ::Type{N0f8}) = ARGB32
+
 ## Math on Colors. These implementations encourage inlining and,
 ## for the case of Normed types, nearly halve the number of multiplications (for RGB)
 
@@ -138,12 +144,12 @@ function (/)(c::AbstractRGB{T}, f::Integer) where T<:Normed
     fs = (1/reinterpret(oneunit(T)))/f
     arith_colorant_type(c){divtype(typeof(f),T)}(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
 end
-(+)(a::AbstractRGB{S}, b::AbstractRGB{T}) where {S,T} = color_rettype(a, b){sumtype(S,T)}(red(a)+red(b), green(a)+green(b), blue(a)+blue(b))
-(-)(a::AbstractRGB{S}, b::AbstractRGB{T}) where {S,T} = color_rettype(a, b){sumtype(S,T)}(red(a)-red(b), green(a)-green(b), blue(a)-blue(b))
+(+)(a::AbstractRGB{S}, b::AbstractRGB{T}) where {S,T} = parametric(color_rettype(a, b), sumtype(S,T))(red(a)+red(b), green(a)+green(b), blue(a)+blue(b))
+(-)(a::AbstractRGB{S}, b::AbstractRGB{T}) where {S,T} = parametric(color_rettype(a, b), sumtype(S,T))(red(a)-red(b), green(a)-green(b), blue(a)-blue(b))
 (+)(a::TransparentRGB, b::TransparentRGB) =
-    color_rettype(a, b){sumtype(a,b)}(red(a)+red(b), green(a)+green(b), blue(a)+blue(b), alpha(a)+alpha(b))
+    parametric(color_rettype(a, b), sumtype(a,b))(red(a)+red(b), green(a)+green(b), blue(a)+blue(b), alpha(a)+alpha(b))
 (-)(a::TransparentRGB, b::TransparentRGB) =
-    color_rettype(a, b){sumtype(a,b)}(red(a)-red(b), green(a)-green(b), blue(a)-blue(b), alpha(a)-alpha(b))
+    parametric(color_rettype(a, b), sumtype(a,b))(red(a)-red(b), green(a)-green(b), blue(a)-blue(b), alpha(a)-alpha(b))
 (*)(c::AbstractRGB, f::Real) = (*)(f, c)
 (*)(c::TransparentRGB, f::Real) = (*)(f, c)
 (/)(c::AbstractRGB, f::Real) = (one(f)/f)*c
@@ -219,11 +225,11 @@ middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(
 (/)(c::TransparentGray, f::Real) = (one(f)/f)*c
 (/)(c::AbstractGray, f::Integer) = (one(eltype(c))/f)*c
 (/)(c::TransparentGray, f::Integer) = (one(eltype(c))/f)*c
-(+)(a::AbstractGray{S}, b::AbstractGray{T}) where {S,T} = color_rettype(a,b){sumtype(S,T)}(gray(a)+gray(b))
-(+)(a::TransparentGray, b::TransparentGray) = color_rettype(a,b){sumtype(eltype(a),eltype(b))}(gray(a)+gray(b),alpha(a)+alpha(b))
-(-)(a::AbstractGray{S}, b::AbstractGray{T}) where {S,T} = color_rettype(a,b){sumtype(S,T)}(gray(a)-gray(b))
-(-)(a::TransparentGray, b::TransparentGray) = color_rettype(a,b){sumtype(eltype(a),eltype(b))}(gray(a)-gray(b),alpha(a)-alpha(b))
-(*)(a::AbstractGray{S}, b::AbstractGray{T}) where {S,T} = color_rettype(a,b){multype(S,T)}(gray(a)*gray(b))
+(+)(a::AbstractGray{S}, b::AbstractGray{T}) where {S,T} = parametric(color_rettype(a,b), sumtype(S,T))(gray(a)+gray(b))
+(+)(a::TransparentGray, b::TransparentGray) = parametric(color_rettype(a,b), sumtype(eltype(a),eltype(b)))(gray(a)+gray(b),alpha(a)+alpha(b))
+(-)(a::AbstractGray{S}, b::AbstractGray{T}) where {S,T} = parametric(color_rettype(a,b), sumtype(S,T))(gray(a)-gray(b))
+(-)(a::TransparentGray, b::TransparentGray) = parametric(color_rettype(a,b), sumtype(eltype(a),eltype(b)))(gray(a)-gray(b),alpha(a)-alpha(b))
+(*)(a::AbstractGray{S}, b::AbstractGray{T}) where {S,T} = parametric(color_rettype(a,b), multype(S,T))(gray(a)*gray(b))
 (^)(a::AbstractGray{S}, b::Integer) where {S} = arith_colorant_type(a){powtype(S,Int)}(gray(a)^convert(Int,b))
 (^)(a::AbstractGray{S}, b::Real) where {S} = arith_colorant_type(a){powtype(S,typeof(b))}(gray(a)^b)
 (+)(c::AbstractGray) = c

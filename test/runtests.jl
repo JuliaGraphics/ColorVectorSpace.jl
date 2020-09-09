@@ -126,6 +126,10 @@ end
         @test Gray24(0.8)*0.5 === Gray(0.4)
         @test Gray24(0.8)/2   === Gray(0.5f0*N0f8(0.8))
         @test Gray24(0.8)/2.0 === Gray(0.4)
+
+        # issue #133
+        @test Gray24(1) - Gray24(0.2) === Gray24(0.8)
+        @test Gray24(1) * Gray24(0.2) === Gray24(0.2)
     end
 
     @testset "Comparisons with Gray" begin
@@ -205,6 +209,9 @@ end
         @test AGray32(0.8,0.2)*0.5 === AGray(0.4,0.1)
         @test AGray32(0.8,0.2)/2   === AGray(0.5f0*N0f8(0.8),0.5f0*N0f8(0.2))
         @test AGray32(0.8,0.2)/2.0 === AGray(0.4,0.1)
+
+        # issue #133
+        @test AGray32(1, 0.4) - AGray32(0.2, 0.2) === AGray32(0.8, 0.2)
     end
 
     @testset "Arithemtic with RGB" begin
@@ -274,6 +281,8 @@ end
         @test RGB24(1,0,0)*0.5 === RGB(0.5,0,0)
         @test RGB24(1,0,0)/2   === RGB(0.5f0,0,0)
         @test RGB24(1,0,0)/2.0 === RGB(0.5,0,0)
+        # issue #133
+        @test RGB24(1, 0, 0) + RGB24(0, 0, 1) === RGB24(1, 0, 1)
     end
 
     @testset "Arithemtic with RGBA" begin
@@ -343,6 +352,8 @@ end
         @test ARGB32(1,0,0,0.8)*0.5 === ARGB(0.5,0,0,0.4)
         @test ARGB32(1,0,0,0.8)/2   === ARGB(0.5f0,0,0,0.5f0*N0f8(0.8))
         @test ARGB32(1,0,0,0.8)/2.0 === ARGB(0.5,0,0,0.4)
+        # issue #133
+        @test ARGB32(1, 0, 0, 0.2) + ARGB32(0, 0, 1, 0.2) === ARGB32(1, 0, 1, 0.4)
     end
 
     @testset "Mixed-type arithmetic" begin

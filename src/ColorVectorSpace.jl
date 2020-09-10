@@ -299,9 +299,6 @@ varm(v::AbstractArray{C}, s::AbstractGray; corrected::Bool=true) where {C<:Abstr
         varm(map(gray,v),gray(s); corrected=corrected)
 real(::Type{C}) where {C<:AbstractGray} = real(eltype(C))
 
-#histrange for Gray type
-histrange(v::AbstractArray{Gray{T}}, n::Integer) where {T} = histrange(convert(Array{Float32}, map(gray, v)), n, :right)
-
 # To help type inference
 promote_rule(::Type{T}, ::Type{C}) where {T<:Real,C<:AbstractGray} = promote_type(T, eltype(C))
 
@@ -344,5 +341,13 @@ _precompile_()
 @deprecate (-)(b::TransparentGray, A::AbstractArray{CV}) where {CV<:TransparentGray} (.-)(b, A)
 @deprecate (*)(A::AbstractArray{T}, b::TransparentGray) where {T<:Number} A.*b
 @deprecate (*)(b::TransparentGray, A::AbstractArray{T}) where {T<:Number} A.*b
+
+## Deprecations
+
+## From 2020-Sept-9
+# Since ImageContrastAdjustment is now doing its own binning, I think this can be safely deprecated and we can eliminate
+# the dependency on StatsBase.
+import StatsBase: histrange
+@deprecate histrange(v::AbstractArray{Gray{T}}, n::Integer) where {T} histrange(convert(Array{Float32}, map(gray, v)), n, :right)
 
 end

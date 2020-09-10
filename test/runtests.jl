@@ -374,7 +374,11 @@ end
 
     @testset "Colors issue #326" begin
         A = rand(RGB{N0f8}, 2, 2)
-        @test @inferred mean(A) == mean(map(c->mapc(FixedPointNumbers.Treduce, c), A))
+        if VERSION >= v"1.5"
+            @test_broken @inferred mean(A) == mean(map(c->mapc(FixedPointNumbers.Treduce, c), A))
+        else
+            @test @inferred mean(A) == mean(map(c->mapc(FixedPointNumbers.Treduce, c), A))
+        end
     end
 end
 

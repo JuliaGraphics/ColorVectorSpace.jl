@@ -8,7 +8,7 @@ import Base: abs, abs2, clamp, convert, copy, div, eps, isfinite, isinf,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
     mod, rem, atan, hypot, max, min, real, typemin, typemax
 import LinearAlgebra: norm
-import StatsBase: histrange, varm
+import StatsBase: varm
 import SpecialFunctions: gamma, lgamma, lfact
 import Statistics: middle
 

@@ -1,6 +1,6 @@
 # ColorVectorSpace
 
-[![Build Status](https://travis-ci.org/JuliaGraphics/ColorVectorSpace.jl.svg?branch=master)](https://travis-ci.org/JuliaGraphics/ColorVectorSpace.jl)
+[![Build Status](https://github.com/JuliaGraphics/ColorVectorSpace.jl/workflows/Unit%20test/badge.svg)](https://github.com/JuliaGraphics/ColorVectorSpace.jl/actions)
 [![codecov.io](http://codecov.io/github/JuliaGraphics/ColorVectorSpace.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaGraphics/ColorVectorSpace.jl?branch=master)
 
 This package is an add-on to [ColorTypes](https://github.com/JuliaGraphics/ColorTypes.jl), and provides fast

@@ -70,7 +70,9 @@ for f in (:mod, :rem, :mod1)
 end
 
 # Real values are treated like grays
-ColorTypes.gray(x::Real) = x
+if !hasmethod(gray, (Number,))
+    ColorTypes.gray(x::Real) = x
+end
 
 dotc(x::T, y::T) where {T<:Real} = acc(x)*acc(y)
 dotc(x::Real, y::Real) = dotc(promote(x, y)...)

@@ -128,8 +128,9 @@ end
         @test Gray24(0.8)/2.0 === Gray(0.4)
 
         # issue #133
-        @test Gray24(1) - Gray24(0.2) === Gray24(0.8)
-        @test Gray24(1) * Gray24(0.2) === Gray24(0.2)
+        @test Gray24(0.2) + Gray24(0.4) === Gray24(0.6)
+        @test Gray24(1)   - Gray24(0.2) === Gray24(0.8)
+        @test Gray24(1)   * Gray24(0.2) === Gray24(0.2)
     end
 
     @testset "Comparisons with Gray" begin
@@ -357,8 +358,18 @@ end
     end
 
     @testset "Mixed-type arithmetic" begin
-        @test RGB(1,0,0) + Gray(0.2f0) == RGB{Float32}(1.2,0.2,0.2)
-        @test RGB(1,0,0) - Gray(0.2f0) == RGB{Float32}(0.8,-0.2,-0.2)
+        @test AGray32(0.2, 0.4) + Gray24(0.2) === AGray32(0.4, 0.4N0f8+1N0f8)
+        @test RGB(1, 0, 0)      + Gray(0.2f0) === RGB{Float32}(1.2, 0.2, 0.2)
+        @test RGB(1, 0, 0)      - Gray(0.2f0) === RGB{Float32}(0.8, -0.2, -0.2)
+        @test RGB24(1, 0, 0)    + Gray(0.2f0) === RGB{Float32}(1.2, 0.2, 0.2)
+        @test RGB24(1, 0, 0)    - Gray(0.2f0) === RGB{Float32}(0.8, -0.2, -0.2)
+        @test RGB(1.0f0, 0, 0)  + Gray24(0.2) === RGB{Float32}(1.2, 0.2, 0.2)
+        @test RGB(1.0f0, 0, 0)  - Gray24(0.2) === RGB{Float32}(0.8, -0.2, -0.2)
+        @test RGB24(1, 0, 0)    + Gray24(0.2) === RGB24(1N0f8+0.2N0f8, 0.2, 0.2)
+        @test RGB24(0.4, 0, 0.2)   + AGray32(0.4, 1)   === ARGB32(0.8, 0.4, 0.6, 1N0f8+1N0f8)
+        @test RGB24(0.4, 0.6, 0.5) - AGray32(0.4, 0.2) === ARGB32(0, 0.2, 0.1, 0.8)
+        @test ARGB32(0.4, 0, 0.2, 0.5) + Gray24(0.4)   === ARGB32(0.8, 0.4, 0.6, 0.5N0f8+1N0f8)
+        @test ARGB32(0.4, 0, 0.2, 0.5) + AGray32(0.4, 0.2) === ARGB32(0.8, 0.4, 0.6, 0.5N0f8+0.2N0f8)
     end
 
     @testset "dotc" begin

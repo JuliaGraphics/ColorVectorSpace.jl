@@ -58,12 +58,11 @@ end
         @test @inferred(cf^2 ) === Gray{Float32}(0.1f0*0.1f0)
         @test @inferred(cf^3.0f0) === Gray{Float32}(0.1f0^3.0f0)
         @test @inferred(2.0*cf) === cf*2.0 === Gray(2.0*0.1f0)
-        # @test @inferred(abs2(ccmp)) === Gray(0.2f0^2)
+        @test_throws MethodError abs2(ccmp)
         @test norm(cf) == norm(cf, 2) == norm(gray(cf))
         @test norm(cf, 1)   == norm(gray(cf), 1)
         @test norm(cf, Inf) == norm(gray(cf), Inf)
         @test @inferred(abs(cf)) === Gray(0.1f0)
-        # @test @inferred(sum(abs2, ccmp)) == Gray(0.2f0^2)
         cu = Gray{N0f8}(0.1)
         @test @inferred(2*cu) === cu*2 === Gray(2*gray(cu))
         @test @inferred(2.0f0*cu) === cu*2.0f0 === Gray(2.0f0*gray(cu))
@@ -110,7 +109,6 @@ end
         @test (acf./Gray{Float32}(2))[1] ≈ 0.05f0
         @test (acu/2)[1] == Gray(gray(acu[1])/2)
         @test (acf/2)[1] ≈ Gray{Float32}(0.05f0)
-        # @test sum(abs2, [cf, ccmp]) ≈ Gray(0.05f0)
 
         @test gray(0.8) === 0.8
 
@@ -258,7 +256,8 @@ end
         @test isinf(RGB(1, Inf, 0.5))
         @test !isnan(RGB(1, Inf, 0.5))
         @test abs(RGB(0.1,0.2,0.3)) == RGB(0.1,0.2,0.3)
-        # @test sum(abs2, RGB(0.1,0.2,0.3)) == RGB(0.1^2,0.2^2,0.3^2)
+        @test_throws MethodError abs2(RGB(0.1,0.2,0.3))
+        @test_throws MethodError sum(abs2, RGB(0.1,0.2,0.3))
         @test norm(RGB(0.1,0.2,0.3)) ≈ sqrt(0.14)/sqrt(3)
 
         acu = RGB{N0f8}[cu]

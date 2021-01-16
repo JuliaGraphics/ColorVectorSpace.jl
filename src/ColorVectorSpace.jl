@@ -1,13 +1,13 @@
 module ColorVectorSpace
 
-using Colors, FixedPointNumbers, SpecialFunctions
+using ColorTypes, FixedPointNumbers, SpecialFunctions
 using TensorCore
 import TensorCore: ⊙, ⊗
 
 using FixedPointNumbers: ShorterThanInt
 
 import Base: ==, +, -, *, /, ^, <, ~
-import Base: abs, abs2, clamp, convert, copy, div, eps, float,
+import Base: abs, clamp, convert, copy, div, eps, float,
     isfinite, isinf, isnan, isless, length, mapreduce, oneunit,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
     mod, rem, atan, hypot, max, min, real, typemin, typemax
@@ -204,12 +204,8 @@ isnan(c::Colorant{T}) where {T<:Normed} = false
 isnan(c::Colorant) = mapreducec(isnan, |, false, c)
 isinf(c::Colorant{T}) where {T<:Normed} = false
 isinf(c::Colorant) = mapreducec(isinf, |, false, c)
-abs(c::MathTypes) = mapc(abs, c)       # if we make abs2 return a scalar, this could be confusing
-# abs2(c::MathTypes) = mapc(abs2, c)   # or mapreducec(abs2, +, float(zero(eltype(c))), c); or is it better to make this undefined?
+abs(c::MathTypes) = mapc(abs, c)
 norm(c::MathTypes, p::Real=2) = (cc = channels(c); norm(cc, p)/(p == 0 ? length(cc) : length(cc)^(1/p)))
-# norm1(c::MathTypes)   =      mapreducec(abs∘float,  +,   float(zero(eltype(c))), c)
-# norm2(c::MathTypes)   = sqrt(mapreducec(abs2∘float, +,   float(zero(eltype(c))), c))
-# normInf(c::MathTypes) =      mapreducec(abs,        max, zero(eltype(c)),        c)
 
 # function Base.rtoldefault(::Union{C1,Type{C1}}, ::Union{C2,Type{C2}}, atol::Real) where {C1<:MathTypes,C2<:MathTypes}
 #     T1, T2 = eltype(C1), eltype(C2)

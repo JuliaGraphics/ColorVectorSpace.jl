@@ -374,9 +374,12 @@ ColorTypes.blue(c::RatRGB)  = c.b
         @test rr + rr == 2*rr == rr*2
         @test rr - rr == zero(rr)
         io = IOBuffer()
+        print(io, N0f8)
+        Tstr = String(take!(io))
         cfn = RGB{N0f8}(0.1, 0.2, 0.3)
         show(io, cfn ⊗ cfn)
-        @test String(take!(io)) == "RGBRGB{N0f8}(\n 0.012N0f8  0.02N0f8   0.031N0f8\n 0.02N0f8   0.039N0f8  0.059N0f8\n 0.031N0f8  0.059N0f8  0.09N0f8)"
+        spstr = Base.VERSION >= v"1.5" ? "" : " "
+        @test String(take!(io)) == "RGBRGB{$Tstr}(\n 0.012N0f8  0.02N0f8   0.031N0f8\n 0.02N0f8   0.039N0f8  0.059N0f8\n 0.031N0f8  0.059N0f8  0.09N0f8$spstr)"
     end
 
     @testset "Arithemtic with RGBA" begin

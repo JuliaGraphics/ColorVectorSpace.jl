@@ -423,7 +423,7 @@ function varmult(op, itr; corrected::Bool=true, dims=:, mean=Statistics.mean(itr
 end
 
 function __init__()
-    if isdefined(Base.Experimental, :register_error_hint)
+    if isdefined(Base, :Experimental) && isdefined(Base.Experimental, :register_error_hint)
         Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
             if exc.f === _color_rettype && length(argtypes) >= 2
                 # Color is not necessary, this is just to show it's possible.

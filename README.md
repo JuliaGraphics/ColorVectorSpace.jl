@@ -40,6 +40,9 @@ This package also defines `norm(c)` for RGB and grayscale colors.
 This makes these color spaces [normed vector spaces](https://en.wikipedia.org/wiki/Normed_vector_space).
 Note that `norm` has been designed to satisfy equivalence of grayscale and RGB representations: if
 `x` is a scalar, then `norm(x) == norm(Gray(x)) == norm(RGB(x, x, x))`.
+Effectively, there's a division-by-3 in the `norm(::RGB)` case compared to the Euclidean interpretation of
+the RGB vector space.
+Equivalence is an important principle for the Colors ecosystem, and violations should be reported as likely bugs.
 
 ## Usage
 

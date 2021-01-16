@@ -33,26 +33,18 @@ MathTypes{T,C} = Union{AbstractRGB{T},TransparentRGB{C,T},AbstractGray{T},Transp
 
 ## Version compatibility with ColorTypes
 
-if !hasmethod(zero, (Type{AGray{N0f8}},))
+if !hasmethod(zero, (Type{TransparentGray},))
     zero(::Type{C}) where {C<:TransparentGray} = C(0,0)
     zero(::Type{C}) where {C<:AbstractRGB}     = C(0,0,0)
     zero(::Type{C}) where {C<:TransparentRGB}  = C(0,0,0,0)
     zero(p::Colorant) = zero(typeof(p))
 end
 
-if !hasmethod(one, (Gray{N0f8},))
-    Base.one(::Type{C}) where {C<:AbstractGray}    = C(1)
+if !hasmethod(one, (Type{TransparentGray},))
     Base.one(::Type{C}) where {C<:TransparentGray} = C(1,1)
     Base.one(::Type{C}) where {C<:AbstractRGB}     = C(1,1,1)
     Base.one(::Type{C}) where {C<:TransparentRGB}  = C(1,1,1,1)
     Base.one(p::Colorant) = one(typeof(p))
-end
-
-if !hasmethod(oneunit, (Type{AGray{N0f8}},))
-    oneunit(::Type{C}) where {C<:TransparentGray} = C(1,1)
-    oneunit(::Type{C}) where {C<:AbstractRGB}     = C(1,1,1)
-    oneunit(::Type{C}) where {C<:TransparentRGB}  = C(1,1,1,1)
-    oneunit(p::Colorant) = oneunit(typeof(p))
 end
 
 # Real values are treated like grays
@@ -67,9 +59,7 @@ multype(::Type{A}, ::Type{B}) where {A,B} = coltype(typeof(zero(A)*zero(B)))
 sumtype(::Type{A}, ::Type{B}) where {A,B} = coltype(typeof(zero(A)+zero(B)))
 divtype(::Type{A}, ::Type{B}) where {A,B} = coltype(typeof(zero(A)/oneunit(B)))
 powtype(::Type{A}, ::Type{B}) where {A,B} = coltype(typeof(zero(A)^zero(B)))
-multype(a::Colorant, b::Colorant) = coltype(multype(eltype(a),eltype(b)))
 sumtype(a::Colorant, b::Colorant) = coltype(sumtype(eltype(a),eltype(b)))
-divtype(a::Colorant, b::Colorant) = coltype(divtype(eltype(a),eltype(b)))
 
 coltype(::Type{T}) where {T<:Fractional} = T
 coltype(::Type{T}) where {T<:Number}     = floattype(T)
@@ -89,7 +79,6 @@ color_rettype(::Type{A}, ::Type{B}) where {A<:AbstractRGB,B<:AbstractRGB} = _col
 color_rettype(::Type{A}, ::Type{B}) where {A<:AbstractGray,B<:AbstractGray} = _color_rettype(base_colorant_type(A), base_colorant_type(B))
 color_rettype(::Type{A}, ::Type{B}) where {A<:TransparentRGB,B<:TransparentRGB} = _color_rettype(base_colorant_type(A), base_colorant_type(B))
 color_rettype(::Type{A}, ::Type{B}) where {A<:TransparentGray,B<:TransparentGray} = _color_rettype(base_colorant_type(A), base_colorant_type(B))
-_color_rettype(::Type{A}, ::Type{B}) where {A<:Colorant,B<:Colorant} = error("binary operation with $A and $B, return type is ambiguous")
 _color_rettype(::Type{C}, ::Type{C}) where {C<:Colorant} = C
 
 color_rettype(c1::Colorant, c2::Colorant) = color_rettype(typeof(c1), typeof(c2))
@@ -317,8 +306,6 @@ end
 dotc(x::T, y::T) where {T<:AbstractGray} = acc(gray(x))*acc(gray(y))
 dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
 
-float(::Type{T}) where {T<:Gray} = typeof(float(zero(T)))
-
 # Mixed types
 (+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)
 (-)(a::MathTypes, b::MathTypes) = (-)(promote(a, b)...)
@@ -433,6 +420,16 @@ function varmult(op, itr; corrected::Bool=true, dims=:, mean=Statistics.mean(itr
         n = length(itr) // length(v)
     end
     return v / (corrected ? max(1, n-1) : max(1, n))
+end
+
+function __init__()
+    Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
+        if exc.f === _color_rettype && length(argtypes) >= 2
+             # Color is not necessary, this is just to show it's possible.
+             A, B = argtypes
+             print(io, "\nIn binary operation with $A and $B, the return type is ambiguous")
+        end
+    end
 end
 
 ## Precompilation

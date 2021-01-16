@@ -56,6 +56,10 @@ ColorTypes.blue(c::RatRGB)  = c.b
         end
     end
 
+    @testset "traits" begin
+        @test floattype(Gray{N0f8}) === Gray{float(N0f8)}
+    end
+
     @testset "Arithmetic with Gray" begin
         cf = Gray{Float32}(0.1)
         @test @inferred(+cf) === cf
@@ -92,6 +96,7 @@ ColorTypes.blue(c::RatRGB)  = c.b
         @test isfinite(cf)
         @test isfinite(Gray(true))
         @test !isinf(cf)
+        @test !isinf(Gray(f))
         @test !isnan(cf)
         @test !isfinite(Gray(NaN))
         @test !isinf(Gray(NaN))
@@ -142,6 +147,7 @@ ColorTypes.blue(c::RatRGB)  = c.b
         @test a === a
         @test isapprox(a, a)
         @test sum(a) == Gray(n8sum(0.8,0.7))
+        @test sum(a[1:1]) == a[1]
         @test abs( varmult(*, a) - (a[1]-a[2])^2 / 2 ) <= 0.001
 
         @test real(Gray{Float32}) <: Real
@@ -176,10 +182,11 @@ ColorTypes.blue(c::RatRGB)  = c.b
         @test !(isless(0.5, g1))
         @test g1 < 0.5
         @test !(0.5 < g1)
-        @test (@inferred(max(g1, g2)) ) == g2
-        @test max(g1, 0.1) == 0.2
+        @test @inferred(max(g1, g2)) === g2
+        @test @inferred(max(g1, Gray(0.3))) === Gray(0.3)
+        @test max(g1, 0.1) === max(0.1, g1) === Float64(gray(g1))
         @test (@inferred(min(g1, g2)) ) == g1
-        @test min(g1, 0.1) == 0.1
+        @test min(g1, 0.1) === min(0.1, g1) === 0.1
         a = Gray{Float64}(0.9999999999999999)
         b = Gray{Float64}(1.0)
 
@@ -314,6 +321,8 @@ ColorTypes.blue(c::RatRGB)  = c.b
         @test_throws MethodError sum(abs2, RGB(0.1,0.2,0.3))
         @test norm(RGB(0.1,0.2,0.3)) ≈ sqrt(0.14)/sqrt(3)
 
+        @test_throws MethodError RGBX(0, 0, 1) + XRGB(1, 0, 0)
+
         acu = RGB{N0f8}[cu]
         acf = RGB{Float32}[cf]
         @test typeof(acu+acf) == Vector{RGB{Float32}}
@@ -331,6 +340,7 @@ ColorTypes.blue(c::RatRGB)  = c.b
 
         a = RGB{N0f8}[RGB(1,0,0), RGB(1,0.8,0)]
         @test sum(a) == RGB(2.0,0.8,0)
+        @test sum(typeof(a)()) == RGB(0.0,0.0,0)
         @test isapprox(a, a)
         a = RGB{Float64}(1.0, 1.0, 0.9999999999999999)
         b = RGB{Float64}(1.0, 1.0, 1.0)
@@ -462,6 +472,7 @@ ColorTypes.blue(c::RatRGB)  = c.b
 
     @testset "dotc" begin
         @test dotc(0.2, 0.2) == 0.2^2
+        @test dotc(Int8(3), Int16(6)) === 18
         @test dotc(0.2, 0.3f0) == 0.2*0.3f0
         @test dotc(N0f8(0.2), N0f8(0.3)) == Float32(N0f8(0.2))*Float32(N0f8(0.3))
         @test dotc(Gray{N0f8}(0.2), Gray24(0.3)) == Float32(N0f8(0.2))*Float32(N0f8(0.3))
@@ -513,6 +524,13 @@ ColorTypes.blue(c::RatRGB)  = c.b
         @test varmult(⊙, cs, dims=2) ≈ 2*[v1, v1, v1]
         v2 = RGB(0.1^2, 0.01^2, 0.03^2)
         @test varmult(⊙, cs, dims=1) ≈ [v2 v2]
+    end
+
+    @testset "copy" begin
+        g = Gray{N0f8}(0.2)
+        @test copy(g) === g
+        c = RGB(0.1, 0.2, 0.3)
+        @test copy(c) === c
     end
 
 end

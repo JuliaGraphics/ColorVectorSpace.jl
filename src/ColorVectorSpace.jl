@@ -102,15 +102,12 @@ channels(c::TransparentGray) = (gray(c), alpha(c))
 channels(c::AbstractRGB)     = (red(c), green(c), blue(c))
 channels(c::TransparentRGB)  = (red(c), green(c), blue(c), alpha(c))
 
-## Math on colors and color types
-
 nan(::Type{T}) where {T<:AbstractFloat} = convert(T, NaN)
 nan(::Type{C}) where {C<:MathTypes} = _nan(eltype(C), C)
 _nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:AbstractGray} = (x = convert(T, NaN); C(x))
 _nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:TransparentGray} = (x = convert(T, NaN); C(x,x))
 _nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:AbstractRGB} = (x = convert(T, NaN); C(x,x,x))
 _nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:TransparentRGB} = (x = convert(T, NaN); C(x,x,x,x))
-
 
 
 ## Generic algorithms
@@ -121,6 +118,8 @@ function Base.reduce_empty(::typeof(Base.add_sum), ::Type{T}) where {T<:MathType
     return zero(base_colorant_type(T){typeof(z)})
 end
 
+
+## Rounding & mod
 for f in (:trunc, :floor, :round, :ceil, :eps, :bswap)
     @eval $f(g::Gray{T}) where {T} = Gray{T}($f(gray(g)))
 end
@@ -136,6 +135,7 @@ end
 
 dotc(x::T, y::T) where {T<:Real} = acc(x)*acc(y)
 dotc(x::Real, y::Real) = dotc(promote(x, y)...)
+
 
 ## Math on Colors. These implementations encourage inlining and,
 ## for the case of Normed types, nearly halve the number of multiplications (for RGB)
@@ -192,12 +192,6 @@ isinf(c::Colorant{T}) where {T<:Normed} = false
 isinf(c::Colorant) = mapreducec(isinf, |, false, c)
 abs(c::MathTypes) = mapc(abs, c)
 norm(c::MathTypes, p::Real=2) = (cc = channels(c); norm(cc, p)/(p == 0 ? length(cc) : length(cc)^(1/p)))
-
-# function Base.rtoldefault(::Union{C1,Type{C1}}, ::Union{C2,Type{C2}}, atol::Real) where {C1<:MathTypes,C2<:MathTypes}
-#     T1, T2 = eltype(C1), eltype(C2)
-#     @show T1, T2
-#     return Base.rtoldefault(eltype(C1), eltype(C2), atol)
-# end
 
 promote_leaf_eltypes(x::Union{AbstractArray{T},Tuple{T,Vararg{T}}}) where {T<:MathTypes} = eltype(T)
 
@@ -288,20 +282,6 @@ if !hasmethod(isless, Tuple{AbstractGray,Real})  # planned for ColorTypes 0.11
     isless(c::AbstractGray, r::Real) = isless(gray(c), r)
     isless(r::Real, c::AbstractGray) = isless(r, gray(c))
 end
-
-# function Base.isapprox(x::AbstractArray{Cx},
-#                        y::AbstractArray{Cy};
-#                        rtol::Real=Base.rtoldefault(eltype(Cx),eltype(Cy),0),
-#                        atol::Real=0,
-#                        norm::Function=norm) where {Cx<:MathTypes,Cy<:MathTypes}
-#     d = norm(x - y)
-#     if isfinite(d)
-#         return d <= atol + rtol*max(norm(x), norm(y))
-#     else
-#         # Fall back to a component-wise approximate comparison
-#         return all(ab -> isapprox(ab[1], ab[2]; rtol=rtol, atol=atol), zip(x, y))
-#     end
-# end
 
 dotc(x::T, y::T) where {T<:AbstractGray} = acc(gray(x))*acc(gray(y))
 dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
@@ -428,7 +408,7 @@ function __init__()
             if exc.f === _color_rettype && length(argtypes) >= 2
                 # Color is not necessary, this is just to show it's possible.
                 A, B = argtypes
-                print(io, "\nIn binary operation with $A and $B, the return type is ambiguous")
+                A !== B && print(io, "\nIn binary operation with $A and $B, the return type is ambiguous")
             end
         end
     end

@@ -10,7 +10,7 @@ import Base: ==, +, -, *, /, ^, <, ~
 import Base: abs, clamp, convert, copy, div, eps, float,
     isfinite, isinf, isnan, isless, length, mapreduce, oneunit,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
-    mod, rem, atan, hypot, max, min, real, typemin, typemax
+    mod, mod1, rem, atan, hypot, max, min, real, typemin, typemax
 # More unaryOps (mostly math functions)
 import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   asin, acos, atan, asinh, acosh, atanh,
@@ -70,7 +70,6 @@ powtype(::Type{A}, ::Type{B}) where {A,B} = coltype(typeof(zero(A)^zero(B)))
 multype(a::Colorant, b::Colorant) = coltype(multype(eltype(a),eltype(b)))
 sumtype(a::Colorant, b::Colorant) = coltype(sumtype(eltype(a),eltype(b)))
 divtype(a::Colorant, b::Colorant) = coltype(divtype(eltype(a),eltype(b)))
-powtype(a::Colorant, b::Colorant) = coltype(powtype(eltype(a),eltype(b)))
 
 coltype(::Type{T}) where {T<:Fractional} = T
 coltype(::Type{T}) where {T<:Number}     = floattype(T)
@@ -126,8 +125,6 @@ _nan(::Type{T}, ::Type{C}) where {T<:AbstractFloat,C<:TransparentRGB} = (x = con
 
 
 ## Generic algorithms
-mapreduce(f, op::Union{typeof(&), typeof(|)}, a::MathTypes) = f(a)  # ambiguity
-mapreduce(f, op, a::MathTypes) = f(a)
 Base.add_sum(c1::MathTypes,c2::MathTypes) = mapc(Base.add_sum, c1, c2)
 Base.reduce_first(::typeof(Base.add_sum), c::MathTypes) = mapc(x->Base.reduce_first(Base.add_sum, x), c)
 function Base.reduce_empty(::typeof(Base.add_sum), ::Type{T}) where {T<:MathTypes}
@@ -271,8 +268,6 @@ _mean_promote(x::MathTypes, y::MathTypes) = mapc(FixedPointNumbers.Treduce, y)
 (-)(c::TransparentGray) = typeof(c)(-gray(c),-alpha(c))
 (/)(a::C, b::C) where C<:AbstractGray = base_color_type(C)(gray(a)/gray(b))
 (/)(a::AbstractGray, b::AbstractGray) = /(promote(a, b)...)
-div(a::C, b::C) where C<:AbstractGray = base_color_type(C)(div(gray(a), gray(b)))
-div(a::AbstractGray, b::AbstractGray) = div(promote(a, b)...)
 (+)(a::AbstractGray, b::Number) = base_color_type(a)(gray(a)+b)
 (+)(a::Number, b::AbstractGray) = b+a
 (-)(a::AbstractGray, b::Number) = base_color_type(a)(gray(a)-b)
@@ -295,13 +290,10 @@ min(a::AbstractGray, b::Number) = min(promote(a,b)...)
 atan(x::AbstractGray, y::AbstractGray)  = atan(gray(x), gray(y))
 hypot(x::AbstractGray, y::AbstractGray) = hypot(gray(x), gray(y))
 
-if !hasmethod(<, Tuple{AbstractGray,AbstractGray})  # planned for ColorTypes 0.11
+if which(<, Tuple{AbstractGray,AbstractGray}).module === Base  # planned for ColorTypes 0.11
     (<)(g1::AbstractGray, g2::AbstractGray) = gray(g1) < gray(g2)
     (<)(c::AbstractGray, r::Real) = gray(c) < r
     (<)(r::Real, c::AbstractGray) = r < gray(c)
-end
-if !hasmethod(isless, Tuple{AbstractGray,AbstractGray})  # this was moved to ColorTypes 0.10
-    isless(g1::AbstractGray, g2::AbstractGray) = isless(gray(g1), gray(g2))
 end
 if !hasmethod(isless, Tuple{AbstractGray,Real})  # planned for ColorTypes 0.11
     isless(c::AbstractGray, r::Real) = isless(gray(c), r)
@@ -384,8 +376,11 @@ function Base.show(io::IO, p::RGBRGB)
     print(io, ')')
 end
 
+Base.zero(::Type{RGBRGB{T}}) where T = (z = zero(T); RGBRGB(z, z, z, z, z, z, z, z, z))
+Base.zero(a::RGBRGB) = zero(typeof(a))
+
 +(a::RGBRGB) = a
--(a::RGBRGB) = RGB(-a.rr, -a.gr, -a.br, -a.rg, -a.gg, -a.bg, -a.rb, -a.gb, -a.bb)
+-(a::RGBRGB) = RGBRGB(-a.rr, -a.gr, -a.br, -a.rg, -a.gg, -a.bg, -a.rb, -a.gb, -a.bb)
 +(a::RGBRGB, b::RGBRGB) = RGBRGB(a.rr + b.rr, a.gr + b.gr, a.br + b.br,
                                  a.rg + b.rg, a.gg + b.gg, a.bg + b.bg,
                                  a.rb + b.rb, a.gb + b.gb, a.bb + b.bb)

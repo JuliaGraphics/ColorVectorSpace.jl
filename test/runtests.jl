@@ -1,4 +1,4 @@
-using LinearAlgebra, Statistics
+using LinearAlgebra, Statistics, SpecialFunctions
 using ColorVectorSpace, Colors, FixedPointNumbers
 
 using Test
@@ -16,6 +16,15 @@ function test_colortype_approx_eq(a::Colorant, b::Colorant, astr, bstr)
         @test getfield(a, i) ≈ getfield(b,i)
     end
 end
+
+struct RatRGB <: AbstractRGB{Rational{Int}}
+    r::Rational{Int}
+    g::Rational{Int}
+    b::Rational{Int}
+end
+ColorTypes.red(c::RatRGB)   = c.r
+ColorTypes.green(c::RatRGB) = c.g
+ColorTypes.blue(c::RatRGB)  = c.b
 
 @testset "Colortypes" begin
 
@@ -51,13 +60,21 @@ end
         cf = Gray{Float32}(0.1)
         @test @inferred(+cf) === cf
         @test @inferred(-cf) === Gray(-0.1f0)
+        @test @inferred(one(cf)*cf) === cf
+        @test oneunit(cf) === Gray(1.0f0)
         ccmp = Gray{Float32}(0.2)
         @test @inferred(2*cf) === cf*2 === 2.0f0*cf === cf*2.0f0 === ccmp
         @test @inferred(ccmp/2) === cf
         @test @inferred(cf*cf) === Gray{Float32}(0.1f0*0.1f0)
+        @test @inferred(Gray{N0f32}(0.5)*Gray(0.5f0)) === Gray(Float64(N0f32(0.5)) * 0.5)
         @test @inferred(cf^2 ) === Gray{Float32}(0.1f0*0.1f0)
         @test @inferred(cf^3.0f0) === Gray{Float32}(0.1f0^3.0f0)
         @test @inferred(2.0*cf) === cf*2.0 === Gray(2.0*0.1f0)
+        cf64 = Gray(0.2)
+        @test cf / cf64 === Gray(0.1f0/0.2)
+        @test_throws MethodError cf ÷ cf
+        @test cf + 0.1     === 0.1 + cf        === Gray(Float64(0.1f0) + 0.1)
+        @test cf64 - 0.1f0 === -(0.1f0 - cf64) === Gray( 0.2 - Float64(0.1f0))
         @test_throws MethodError abs2(ccmp)
         @test norm(cf) == norm(cf, 2) == norm(gray(cf))
         @test norm(cf, 1)   == norm(gray(cf), 1)
@@ -85,6 +102,14 @@ end
         @test abs(Gray(0.1)) === Gray(0.1)
         @test eps(Gray{N0f8}) === Gray(eps(N0f8))  # #282
         @test atan(Gray(0.1), Gray(0.2)) == atan(0.1, 0.2)
+        @test hypot(Gray(0.2), Gray(0.3)) === hypot(0.2, 0.3)
+        # Multiplication
+        @test cf ⋅ cf   === gray(cf)^2
+        @test cf ⋅ cf64 === gray(cf) * gray(cf64)
+        @test cf ⊙ cf   === Gray(gray(cf)^2)
+        @test cf ⊙ cf64 === Gray(gray(cf) * gray(cf64))
+        @test cf ⊗ cf   === Gray(gray(cf)^2)
+        @test cf ⊗ cf64 === Gray(gray(cf) * gray(cf64))
 
         acu = Gray{N0f8}[cu]
         acf = Gray{Float32}[cf]
@@ -158,6 +183,15 @@ end
         a = Gray{Float64}(0.9999999999999999)
         b = Gray{Float64}(1.0)
 
+        @test (Gray(0.3) < Gray(NaN)) == (0.3 < NaN)
+        @test (Gray(NaN) < Gray(0.3)) == (NaN < 0.3)
+        @test isless(Gray(0.3), Gray(NaN)) == isless(0.3, NaN)
+        @test isless(Gray(NaN), Gray(0.3)) == isless(NaN, 0.3)
+        @test isless(Gray(0.3), NaN) == isless(0.3, NaN)
+        @test isless(Gray(NaN), 0.3) == isless(NaN, 0.3)
+        @test isless(0.3, Gray(NaN)) == isless(0.3, NaN)
+        @test isless(NaN, Gray(0.3)) == isless(NaN, 0.3)
+
         @test isapprox(a, b)
         a = Gray{Float64}(0.99)
         @test !(isapprox(a, b, rtol = 0.01))
@@ -165,16 +199,36 @@ end
     end
 
     @testset "Unary operations with Gray" begin
+        ntested = 0
         for g in (Gray(0.4), Gray{N0f8}(0.4))
             @test @inferred(zero(g)) === typeof(g)(0)
             @test @inferred(oneunit(g)) === typeof(g)(1)
-            for op in ColorVectorSpace.unaryOps
-                try
-                    v = @eval $op(gray(g))  # if this fails, don't bother
-                    @show op
-                    @test op(g) == v
-                catch
+            for opgroup in (ColorVectorSpace.unaryOps, (:trunc, :floor, :round, :ceil, :eps, :bswap))
+                for op in opgroup
+                    op ∈ (:frexp, :exponent, :modf, :lfact) && continue
+                    op === :~ && eltype(g) === Float64 && continue
+                    op === :significand && eltype(g) === N0f8 && continue
+                    try
+                        v = @eval $op(gray($g))  # if this fails, don't bother with the next test
+                        @test @eval($op($g)) === Gray(v)
+                        ntested += 1
+                    catch ex
+                        @test ex isa Union{DomainError,ArgumentError}
+                    end
                 end
+            end
+        end
+        @test ntested > 130
+        for g in (Gray{N0f8}(0.4), Gray{N0f8}(0.6))
+            for op in (:trunc, :floor, :round, :ceil)
+                v = @eval $op(Bool, gray($g))
+                @test @eval($op(Bool, $g)) === Gray(v)
+            end
+        end
+        for (g1, g2) in ((Gray(0.4), Gray(0.3)), (Gray(N0f8(0.4)), Gray(N0f8(0.3))))
+            for op in (:mod, :rem, :mod1)
+                v = @eval $op(gray($g1), gray($g2))
+                @test @eval($op($g1, $g2)) === Gray(v)
             end
         end
         u = N0f8(0.4)
@@ -301,9 +355,18 @@ end
         @test cf ⊙ cf   === RGB(red(cf)^2, green(cf)^2, blue(cf)^2)
         @test cf ⊙ cf64 === RGB(red(cf)*red(cf64), green(cf)*green(cf64), blue(cf)*blue(cf64))
         c2 = rand(RGB{Float64})
-        @test Matrix(cf ⊗ c2) == [red(cf)*red(c2)   red(cf)*green(c2)   red(cf)*blue(c2);
-                                  green(cf)*red(c2) green(cf)*green(c2) green(cf)*blue(c2);
-                                  blue(cf)*red(c2)  blue(cf)*green(c2)  blue(cf)*blue(c2)]
+        rr = cf ⊗ c2
+        @test Matrix(rr) == [red(cf)*red(c2)   red(cf)*green(c2)   red(cf)*blue(c2);
+                             green(cf)*red(c2) green(cf)*green(c2) green(cf)*blue(c2);
+                             blue(cf)*red(c2)  blue(cf)*green(c2)  blue(cf)*blue(c2)]
+        @test +rr === rr
+        @test -rr === RGBRGB(-rr.rr, -rr.gr, -rr.br, -rr.rg, -rr.gg, -rr.bg, -rr.rb, -rr.gb, -rr.bb)
+        @test rr + rr == 2*rr == rr*2
+        @test rr - rr == zero(rr)
+        io = IOBuffer()
+        cfn = RGB{N0f8}(0.1, 0.2, 0.3)
+        show(io, cfn ⊗ cfn)
+        @test String(take!(io)) == "RGBRGB{N0f8}(\n 0.012N0f8  0.02N0f8   0.031N0f8\n 0.02N0f8   0.039N0f8  0.059N0f8\n 0.031N0f8  0.059N0f8  0.09N0f8)"
     end
 
     @testset "Arithemtic with RGBA" begin
@@ -392,6 +455,11 @@ end
         @test ARGB32(0.4, 0, 0.2, 0.5) + AGray32(0.4, 0.2) === ARGB32(0.8, 0.4, 0.6, 0.5N0f8+0.2N0f8)
     end
 
+    @testset "Custom RGB arithmetic" begin
+        cf = RatRGB(1//10, 2//10, 3//10)
+        @test cf ⋅ cf   === (Float64(red(cf))^2 + Float64(green(cf))^2 + Float64(blue(cf))^2)/3
+    end
+
     @testset "dotc" begin
         @test dotc(0.2, 0.2) == 0.2^2
         @test dotc(0.2, 0.3f0) == 0.2*0.3f0
@@ -427,6 +495,7 @@ end
             @test norm(x, p) == norm(g, p) ≈ norm(c, p)
         end
         @test dot(x, x) == dot(g, g) ≈ dot(c, c)
+        @test_throws MethodError mapreduce(x->x^2, +, c)   # this risks breaking equivalence & noniterability
     end
 
     @testset "varmult" begin

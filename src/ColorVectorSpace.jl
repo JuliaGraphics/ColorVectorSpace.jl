@@ -423,11 +423,13 @@ function varmult(op, itr; corrected::Bool=true, dims=:, mean=Statistics.mean(itr
 end
 
 function __init__()
-    Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
-        if exc.f === _color_rettype && length(argtypes) >= 2
-             # Color is not necessary, this is just to show it's possible.
-             A, B = argtypes
-             print(io, "\nIn binary operation with $A and $B, the return type is ambiguous")
+    if isdefined(Base.Experimental, :register_error_hint)
+        Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
+            if exc.f === _color_rettype && length(argtypes) >= 2
+                # Color is not necessary, this is just to show it's possible.
+                A, B = argtypes
+                print(io, "\nIn binary operation with $A and $B, the return type is ambiguous")
+            end
         end
     end
 end

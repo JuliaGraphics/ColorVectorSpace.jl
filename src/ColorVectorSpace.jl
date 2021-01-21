@@ -180,8 +180,9 @@ end
 
 # New multiplication operators
 (⋅)(x::AbstractRGB, y::AbstractRGB)  = (T = acctype(eltype(x), eltype(y)); T(red(x))*T(red(y)) + T(green(x))*T(green(y)) + T(blue(x))*T(blue(y)))/3
+(⋅)(x::Union{AbstractRGB,AbstractGray}, y::Union{AbstractRGB,AbstractGray})  = ⋅(promote(x, y)...)
 (⊙)(x::C, y::C) where C<:AbstractRGB = base_color_type(C)(red(x)*red(y), green(x)*green(y), blue(x)*blue(y))
-(⊙)(x::AbstractRGB, y::AbstractRGB)  = ⊙(promote(x, y)...)
+(⊙)(x::Union{AbstractRGB,AbstractGray}, y::Union{AbstractRGB,AbstractGray})  = ⊙(promote(x, y)...)
 # ⊗ defined below
 
 isfinite(c::Colorant{T}) where {T<:Normed} = true
@@ -362,6 +363,7 @@ function ⊗(a::AbstractRGB, b::AbstractRGB)
     agbr, abbg, arbb, abbr, arbg, agbb = ag*br, ab*bg, ar*bb, ab*br, ar*bg, ag*bb
     return RGBRGB(ar*br, agbr, abbr, arbg, ag*bg, abbg, arbb, agbb, ab*bb)
 end
+⊗(a::Union{AbstractRGB,AbstractGray}, b::Union{AbstractRGB,AbstractGray}) = ⊗(promote(a, b)...)
 
 """
     varmult(op, itr; corrected::Bool=true, mean=Statistics.mean(itr), dims=:)

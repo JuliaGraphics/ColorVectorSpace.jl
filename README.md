@@ -83,7 +83,7 @@ RGBRGB{Float64}(
 
 Note that `c1⋅c2 = (c1.r*c2.r + c1.g*c2.g + c1.b*c2.b)/3`, where the division by 3 ensures the equivalence `norm(x) == norm(Gray(x)) == norm(RGB(x, x, x))`.
 
-It is designed to not support the ordinary multiplication operation `*` because it is not obvious which one of these should be the default option.
+Ordinary multiplication `*` is not supported because it is not obvious which one of these should be the default option.
 
 However, `*` is defined for grayscale since all these three multiplication operations (i.e., `⋅`, `⊙` and `⊗`) are equivalent in the 1D vector space.
 

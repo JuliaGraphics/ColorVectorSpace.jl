@@ -466,6 +466,12 @@ ColorTypes.blue(c::RatRGB)  = c.b
         @test RGB24(0.4, 0.6, 0.5) - AGray32(0.4, 0.2) === ARGB32(0, 0.2, 0.1, 0.8)
         @test ARGB32(0.4, 0, 0.2, 0.5) + Gray24(0.4)   === ARGB32(0.8, 0.4, 0.6, 0.5N0f8+1N0f8)
         @test ARGB32(0.4, 0, 0.2, 0.5) + AGray32(0.4, 0.2) === ARGB32(0.8, 0.4, 0.6, 0.5N0f8+0.2N0f8)
+
+        g, rgb = Gray(0.2), RGB(0.1, 0.2, 0.3)
+        @test g ⋅ rgb == rgb ⋅ g ≈ 0.2*(0.1 + 0.2 + 0.3)/3
+        @test g ⊙ rgb == rgb ⊙ g ≈ RGB(0.2*0.1, 0.2^2, 0.2*0.3)
+        @test g ⊗ rgb == RGB(g) ⊗ rgb
+        @test rgb ⊗ g == rgb ⊗ RGB(g)
     end
 
     @testset "Custom RGB arithmetic" begin

@@ -13,7 +13,7 @@ TensorCore = "62fd8b95-f654-4bbd-a8a5-9c27f68ccd50"
 [compat]
 ColorTypes = "0.10"
 FixedPointNumbers = "0.8"
-SpecialFunctions = "0.7, 0.8, 0.9, 0.10"
+SpecialFunctions = "0.7, 0.8, 0.9, 0.10, 1.2"
 TensorCore = "0.1"
 julia = "1"
 

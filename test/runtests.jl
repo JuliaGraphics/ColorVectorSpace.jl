@@ -226,6 +226,7 @@ ColorTypes.blue(c::RatRGB)  = c.b
             end
         end
         @test ntested > 130
+        @test logabsgamma(Gray(0.2)) == (Gray(logabsgamma(0.2)[1]), 1)
         for g in (Gray{N0f8}(0.4), Gray{N0f8}(0.6))
             for op in (:trunc, :floor, :round, :ceil)
                 v = @eval $op(Bool, gray($g))

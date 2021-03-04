@@ -23,7 +23,7 @@ import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   exp2, exp10, expm1, cbrt, sqrt,
                   significand, frexp, modf
 import LinearAlgebra: norm, ⋅, dot, promote_leaf_eltypes  # norm1, norm2, normInf
-import SpecialFunctions: gamma, lgamma, lfact
+import SpecialFunctions: gamma, logabsgamma, lfact
 using Statistics
 import Statistics: middle, _mean_promote
 
@@ -213,16 +213,20 @@ const unaryOps = (:~, :conj, :abs,
                   :asind, :atand, :rad2deg, :deg2rad,
                   :log, :log2, :log10, :log1p, :exponent, :exp,
                   :exp2, :exp10, :expm1, :cbrt, :sqrt,
-                  :significand, :lgamma,
+                  :significand,
                   :gamma, :lfact, :frexp, :modf,
                   :(SpecialFunctions.erf), :(SpecialFunctions.erfc),
                   :(SpecialFunctions.erfcx), :(SpecialFunctions.erfi), :(SpecialFunctions.dawson),
-                  :(SpecialFunctions.airy), :(SpecialFunctions.airyai),
-                  :(SpecialFunctions.airyprime), :(SpecialFunctions.airyaiprime), :(SpecialFunctions.airybi), :(SpecialFunctions.airybiprime),
+                  :(SpecialFunctions.airyai),
+                  :(SpecialFunctions.airyaiprime), :(SpecialFunctions.airybi), :(SpecialFunctions.airybiprime),
                   :(SpecialFunctions.besselj0), :(SpecialFunctions.besselj1), :(SpecialFunctions.bessely0), :(SpecialFunctions.bessely1),
                   :(SpecialFunctions.eta), :(SpecialFunctions.zeta), :(SpecialFunctions.digamma))
 for op in unaryOps
     @eval ($op)(c::AbstractGray) = Gray($op(gray(c)))
+end
+function logabsgamma(c::AbstractGray)
+    lagc, s = logabsgamma(gray(c))
+    return Gray(lagc), s
 end
 
 middle(c::AbstractGray) = arith_colorant_type(c)(middle(gray(c)))

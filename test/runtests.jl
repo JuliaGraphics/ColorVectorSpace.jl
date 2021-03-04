@@ -479,6 +479,20 @@ ColorTypes.blue(c::RatRGB)  = c.b
         @test cf ⋅ cf   === (Float64(red(cf))^2 + Float64(green(cf))^2 + Float64(blue(cf))^2)/3
     end
 
+    @testset "Complement" begin
+        @test complement(Gray(0.2)) === Gray(0.8)
+        @test complement(AGray(0.2f0, 0.7f0)) === AGray(0.8f0, 0.7f0)
+        @test complement(GrayA{N0f8}(0.2, 0.7)) === GrayA{N0f8}(0.8, 0.7)
+        @test_broken complement(Gray24(0.2)) === Gray24(0.8)
+        @test_broken complement(AGray32(0.2, 0.7)) === AGray32(0.8, 0.7)
+
+        @test complement(RGB(0, 0.3, 1)) === RGB(1, 0.7, 0)
+        @test complement(ARGB(0, 0.3f0, 1, 0.7f0)) === ARGB(1, 0.7f0, 0, 0.7f0)
+        @test complement(RGBA{N0f8}(0, 0.6, 1, 0.7)) === RGBA{N0f8}(1, 0.4, 0.0, 0.7)
+        @test complement(RGB24(0, 0.6, 1)) === RGB24(1, 0.4, 0.0)
+        @test complement(ARGB32(0, 0.6, 1, 0.7)) === ARGB32(1, 0.4, 0.0, 0.7)
+    end
+
     @testset "dotc" begin
         @test dotc(0.2, 0.2) == 0.2^2
         @test dotc(Int8(3), Int16(6)) === 18

@@ -400,9 +400,14 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test cf ⊙ cf64 === RGB(red(cf)*red(cf64), green(cf)*green(cf64), blue(cf)*blue(cf64))
         c2 = rand(RGB{Float64})
         rr = cf ⊗ c2
-        @test Matrix(rr) == [red(cf)*red(c2)   red(cf)*green(c2)   red(cf)*blue(c2);
+        matrix_rr = Matrix(rr)
+        @test matrix_rr  == [red(cf)*red(c2)   red(cf)*green(c2)   red(cf)*blue(c2);
                              green(cf)*red(c2) green(cf)*green(c2) green(cf)*blue(c2);
                              blue(cf)*red(c2)  blue(cf)*green(c2)  blue(cf)*blue(c2)]
+        @test RGBRGB(matrix_rr) == rr
+        @test RGBRGB{N0f8}(zeros(3, 3)) == zero(RGBRGB{N0f8})
+        @test_throws MethodError RGBRGB(rand(9))
+        @test_throws DimensionMismatch RGBRGB(rand(9, 1))
         @test +rr === rr
         @test -rr === RGBRGB(-rr.rr, -rr.gr, -rr.br, -rr.rg, -rr.gg, -rr.bg, -rr.rb, -rr.gb, -rr.bb)
         @test rr + rr == 2*rr == rr*2
@@ -412,8 +417,19 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         Tstr = String(take!(io))
         cfn = RGB{N0f8}(0.1, 0.2, 0.3)
         show(io, cfn ⊗ cfn)
+        nsuf = string(0.0N0f8)[4:end] # FixedPointNumbers issue #241
+        @test String(take!(io)) == "RGBRGB{$Tstr}([0.012$nsuf 0.02$nsuf 0.031$nsuf; " *
+                                                  "0.02$nsuf 0.039$nsuf 0.059$nsuf; " *
+                                                  "0.031$nsuf 0.059$nsuf 0.09$nsuf])"
+        show(io, "text/plain", cfn ⊗ cfn)
         spstr = Base.VERSION >= v"1.5" ? "" : " "
-        @test String(take!(io)) == "RGBRGB{$Tstr}(\n 0.012N0f8  0.02N0f8   0.031N0f8\n 0.02N0f8   0.039N0f8  0.059N0f8\n 0.031N0f8  0.059N0f8  0.09N0f8$spstr)"
+        @test String(take!(io)) == "RGBRGB{$Tstr}:\n 0.012  0.02   0.031\n 0.02   0.039  0.059\n 0.031  0.059  0.09$spstr"
+        show(IOContext(io, :compact => false), "text/plain", cf64 ⊗ cf64)
+        regex = Regex(raw"^RGBRGB{Float64}:\n" *
+                      raw" 0.010\d+\s+0.020\d+\s+0.030\d+\s*\n" *
+                      raw" 0.020\d+\s+0.040\d+\s+0.060\d+\s*\n" *
+                      raw" 0.030\d+\s+0.060\d+\s+0.090\d+\s*$")
+        @test occursin(regex, String(take!(io)))
     end
 
     @testset "Arithemtic with TransparentRGB" begin

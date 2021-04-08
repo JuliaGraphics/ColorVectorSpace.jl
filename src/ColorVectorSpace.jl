@@ -94,6 +94,21 @@ divtype(::Type{A}, ::Type{B}) where {A,B<:FixedPoint} = coltype(typeof(zero(A)/t
 powtype(::Type{A}, ::Type{B}) where {A,B} = coltype(typeof(zero(A)^zero(B)))
 sumtype(a::Colorant, b::Colorant) = coltype(sumtype(eltype(a),eltype(b)))
 
+multype(::Type{Bool}, ::Type{B}) where {B} = B
+multype(::Type{A}, ::Type{Bool}) where {A} = A <: Integer ? multype(A, N0f8) : A
+multype(::Type{Bool}, ::Type{Bool}) = Bool
+sumtype(::Type{Bool}, ::Type{B}) where {B} = B <: Integer ? N0f8 : sumtype(N0f8, B) # FIXME
+sumtype(::Type{A}, ::Type{Bool}) where {A} = sumtype(Bool, A)
+sumtype(::Type{Bool}, ::Type{Bool}) = N0f8 # FIXME
+divtype(::Type{Bool}, ::Type{B}) where {B} = divtype(B <: Integer ? N0f8 : UInt8, B)
+divtype(::Type{Bool}, ::Type{B}) where {B<:FixedPoint} = divtype(N0f8, B) # FIXME
+divtype(::Type{A}, ::Type{Bool}) where {A} = divtype(A, A <: FixedPoint ? N0f8 : UInt8) # FIXME
+divtype(::Type{A}, ::Type{Bool}) where {A<:Integer} = Float32 # FIXME
+divtype(::Type{Bool}, ::Type{Bool}) = divtype(N0f8, UInt8)
+powtype(::Type{Bool}, ::Type{B}) where {B} = B <: Integer ? Bool : B
+powtype(::Type{A}, ::Type{Bool}) where {A} = A
+powtype(::Type{Bool}, ::Type{Bool}) = Bool
+
 coltype(::Type{T}) where {T<:Fractional} = T
 coltype(::Type{T}) where {T<:Number}     = floattype(T)
 
@@ -168,6 +183,8 @@ function _div(x::AbstractFloat, y::Normed)
 end
 _div(x::AbstractFloat, y::Integer) = _mul(x, oneunit(x) / y)
 _div(x::T, y::T) where {T} = x / y
+_div(x::Bool, y::Bool) = (T = divtype(typeof(x), typeof(y)); _div(T(x), T(y)))
+_div(x::FixedPoint, y::Bool) = (T = divtype(typeof(x), typeof(y)); T(_div(T(x), T(y)))) # FIXME
 _div(x, y) = (T = divtype(typeof(x), typeof(y)); _div(T(x), T(y)))
 
 @inline _mapc(::Type{C}, f, c) where {C<:MathTypes} = C(f.(channels(c))...)
@@ -241,10 +258,10 @@ function (/)(c::C, f::AbstractFloat) where {C<:Union{AbstractRGB, TransparentRGB
     r = oneunit(divtype(eltype(c), typeof(f))) / f
     _mapc(rettype(/, c, f), v -> v * r, c)
 end
-(+)(a::AbstractRGB, b::AbstractRGB) = rettype(+, a, b)(red(a)+red(b), green(a)+green(b), blue(a)+blue(b))
-(-)(a::AbstractRGB, b::AbstractRGB) = rettype(-, a, b)(red(a)-red(b), green(a)-green(b), blue(a)-blue(b))
-(+)(a::TransparentRGB, b::TransparentRGB) = rettype(+, a, b)(red(a)+red(b), green(a)+green(b), blue(a)+blue(b), alpha(a)+alpha(b))
-(-)(a::TransparentRGB, b::TransparentRGB) = rettype(-, a, b)(red(a)-red(b), green(a)-green(b), blue(a)-blue(b), alpha(a)-alpha(b))
+(+)(a::AbstractRGB, b::AbstractRGB) = _mapc(rettype(+, a, b), +, a, b)
+(-)(a::AbstractRGB, b::AbstractRGB) = _mapc(rettype(-, a, b), -, a, b)
+(+)(a::TransparentRGB, b::TransparentRGB) = _mapc(rettype(+, a, b), +, a, b)
+(-)(a::TransparentRGB, b::TransparentRGB) = _mapc(rettype(-, a, b), -, a, b)
 
 # New multiplication operators
 function (⋅)(x::AbstractRGB, y::AbstractRGB)
@@ -290,18 +307,26 @@ middle(c::AbstractGray) = arith_colorant_type(c)(middle(gray(c)))
 middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(x), gray(y)))
 
 (/)(n::Number, c::AbstractGray) = base_color_type(c)(_div(real(n), gray(c)))
-(+)(a::AbstractGray,    b::AbstractGray)    = rettype(+, a, b)(gray(a)+gray(b))
-(+)(a::TransparentGray, b::TransparentGray) = rettype(+, a, b)(gray(a)+gray(b), alpha(a)+alpha(b))
-(-)(a::AbstractGray,    b::AbstractGray)    = rettype(-, a, b)(gray(a)-gray(b))
-(-)(a::TransparentGray, b::TransparentGray) = rettype(-, a, b)(gray(a)-gray(b), alpha(a)-alpha(b))
+(+)(a::AbstractGray,       b::AbstractGray)       = _mapc(rettype(+, a, b), +, a, b)
+(+)(a::AbstractGray{Bool}, b::AbstractGray{Bool}) = _mapc(rettype(+, a, b), ⊻, a, b)
+(+)(a::TransparentGray,    b::TransparentGray)    = _mapc(rettype(+, a, b), +, a, b)
+(-)(a::AbstractGray,       b::AbstractGray)       = _mapc(rettype(-, a, b), -, a, b)
+(-)(a::AbstractGray{Bool}, b::AbstractGray{Bool}) = _mapc(rettype(-, a, b), ⊻, a, b)
+(-)(a::TransparentGray,    b::TransparentGray)    = _mapc(rettype(-, a, b), -, a, b)
 (*)(a::AbstractGray, b::AbstractGray) = a ⊙ b
 (^)(a::AbstractGray, b::Integer) = rettype(^, a, b)(gray(a)^convert(Int,b))
 (^)(a::AbstractGray, b::Real)    = rettype(^, a, b)(gray(a)^b)
 (/)(a::AbstractGray, b::AbstractGray) = rettype(/, a, b)(_div(gray(a), gray(b)))
 (+)(a::AbstractGray, b::Number) = base_color_type(a)(gray(a)+b)
+(+)(a::AbstractGray{Bool}, b::Number) = arith_colorant_type(a){sumtype(Bool, typeof(b))}(gray(a) + b)
+(+)(a::AbstractGray{Bool}, b::Bool) = a + N0f8(b) # FIXME
 (+)(a::Number, b::AbstractGray) = b+a
 (-)(a::AbstractGray, b::Number) = base_color_type(a)(gray(a)-b)
 (-)(a::Number, b::AbstractGray) = base_color_type(b)(a-gray(b))
+(-)(a::AbstractGray{Bool}, b::Number) = arith_colorant_type(a){sumtype(Bool, typeof(b))}(gray(a) - b)
+(-)(a::Number, b::AbstractGray{Bool}) = arith_colorant_type(b){sumtype(typeof(a), Bool)}(a - gray(b))
+(-)(a::AbstractGray{Bool}, b::Bool) = a - N0f8(b) # FIXME
+(-)(a::Bool, b::AbstractGray{Bool}) = N0f8(a) - b # FIXME
 
 (⋅)(x::C, y::C) where {C<:AbstractGray} = _mul(gray(x), gray(y))
 (⊗)(x::C, y::C) where {C<:AbstractGray} = x ⊙ y

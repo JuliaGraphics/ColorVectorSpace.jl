@@ -26,6 +26,29 @@ ColorTypes.red(c::RatRGB)   = c.r
 ColorTypes.green(c::RatRGB) = c.g
 ColorTypes.blue(c::RatRGB)  = c.b
 
+struct RGBA32 <: AbstractRGBA{RGB24, N0f8}
+    color::UInt32
+    RGBA32(c::UInt32, ::Type{Val{true}}) = new(c)
+end
+function RGBA32(r, g, b, alpha=1N0f8)
+    u32 = reinterpret(UInt32, ARGB32(r, g, b, alpha))
+    RGBA32((u32 << 0x8) | (u32 >> 0x18), Val{true})
+end
+ColorTypes.red(  c::RGBA32) = reinterpret(N0f8, (c.color >> 0x18) % UInt8)
+ColorTypes.green(c::RGBA32) = reinterpret(N0f8, (c.color >> 0x10) % UInt8)
+ColorTypes.blue( c::RGBA32) = reinterpret(N0f8, (c.color >> 0x08) % UInt8)
+ColorTypes.alpha(c::RGBA32) = reinterpret(N0f8, c.color % UInt8)
+ColorTypes.comp4(c::RGBA32) = alpha(c)
+
+struct GrayA32 <: AbstractGrayA{Gray24, N0f8}
+    color::UInt32
+    GrayA32(c::UInt32, ::Type{Val{true}}) = new(c)
+end
+GrayA32(g, alpha=1N0f8) = GrayA32(bswap(reinterpret(UInt32, AGray32(g, alpha))), Val{true})
+ColorTypes.gray( c::GrayA32) = reinterpret(N0f8, (c.color >> 0x18) % UInt8)
+ColorTypes.alpha(c::GrayA32) = reinterpret(N0f8, c.color % UInt8)
+ColorTypes.comp2(c::RGBA32) = alpha(c)
+
 @testset "Colortypes" begin
 
     @testset "convert" begin
@@ -244,7 +267,7 @@ ColorTypes.blue(c::RatRGB)  = c.b
         @test -Gray(u) == Gray(-u)
     end
 
-    @testset "Arithmetic with GrayA" begin
+    @testset "Arithmetic with TransparentGray" begin
         p1 = GrayA{Float32}(Gray(0.8), 0.2)
         @test @inferred(zero(p1)) === GrayA{Float32}(0,0)
         @test @inferred(oneunit(p1)) === GrayA{Float32}(1,1)
@@ -282,6 +305,13 @@ ColorTypes.blue(c::RatRGB)  = c.b
 
         # issue #133
         @test AGray32(1, 0.4) - AGray32(0.2, 0.2) === AGray32(0.8, 0.2)
+
+        # issue #146
+        @test @inferred(GrayA32(0.8,0.2)*N0f8(0.5)) === GrayA{N0f8}(0.4,0.1)
+        @test @inferred(GrayA32(0.8,0.2)*0.5) === GrayA(0.4,0.1)
+        @test @inferred(GrayA32(0.8,0.2)/2)   === GrayA(0.5f0*N0f8(0.8),0.5f0*N0f8(0.2))
+        @test @inferred(GrayA32(0.8,0.2)/2.0) === GrayA(0.4,0.1)
+        @test @inferred(GrayA32(1, 0.4) - GrayA32(0.2, 0.2)) === GrayA32(0.8, 0.2)
     end
 
     @testset "Arithemtic with RGB" begin
@@ -383,7 +413,7 @@ ColorTypes.blue(c::RatRGB)  = c.b
         @test String(take!(io)) == "RGBRGB{$Tstr}(\n 0.012N0f8  0.02N0f8   0.031N0f8\n 0.02N0f8   0.039N0f8  0.059N0f8\n 0.031N0f8  0.059N0f8  0.09N0f8$spstr)"
     end
 
-    @testset "Arithemtic with RGBA" begin
+    @testset "Arithemtic with TransparentRGB" begin
         cf = RGBA{Float32}(0.1,0.2,0.3,0.4)
         @test @inferred(zero(cf)) === RGBA{Float32}(0,0,0,0)
         @test @inferred(oneunit(cf)) === RGBA{Float32}(1,1,1,1)
@@ -452,6 +482,13 @@ ColorTypes.blue(c::RatRGB)  = c.b
         @test ARGB32(1,0,0,0.8)/2.0 === ARGB(0.5,0,0,0.4)
         # issue #133
         @test ARGB32(1, 0, 0, 0.2) + ARGB32(0, 0, 1, 0.2) === ARGB32(1, 0, 1, 0.4)
+
+        # issue #146
+        @test @inferred(RGBA32(1,0,0,0.8)*N0f8(0.5)) === RGBA{N0f8}(0.5,0,0,0.4)
+        @test @inferred(RGBA32(1,0,0,0.8)*0.5) === RGBA(0.5,0,0,0.4)
+        @test @inferred(RGBA32(1,0,0,0.8)/2)   === RGBA(0.5f0,0,0,0.5f0*N0f8(0.8))
+        @test @inferred(RGBA32(1,0,0,0.8)/2.0) === RGBA(0.5,0,0,0.4)
+        @test @inferred(RGBA32(1, 0, 0, 0.2) + RGBA32(0, 0, 1, 0.2)) === RGBA32(1, 0, 1, 0.4)
     end
 
     @testset "Mixed-type arithmetic" begin
@@ -475,7 +512,7 @@ ColorTypes.blue(c::RatRGB)  = c.b
         @test rgb ⊗ g == rgb ⊗ RGB(g)
     end
 
-    @testset "Custom RGB arithmetic" begin
+    @testset "Custom RGB arithmetic" begin # see also the `RGBA32` cases above
         cf = RatRGB(1//10, 2//10, 3//10)
         @test cf ⋅ cf   === (Float64(red(cf))^2 + Float64(green(cf))^2 + Float64(blue(cf))^2)/3
     end

@@ -84,17 +84,20 @@ _color_rettype(::Type{C}, ::Type{C}) where {C<:Colorant} = C
 color_rettype(c1::Colorant, c2::Colorant) = color_rettype(typeof(c1), typeof(c2))
 
 arith_colorant_type(::C) where {C<:Colorant} = arith_colorant_type(C)
-arith_colorant_type(::Type{C}) where {C<:Colorant} = base_colorant_type(C)
-arith_colorant_type(::Type{Gray24}) = Gray
-arith_colorant_type(::Type{AGray32}) = AGray
-arith_colorant_type(::Type{RGB24}) = RGB
-arith_colorant_type(::Type{ARGB32}) = ARGB
+function arith_colorant_type(::Type{C}) where {C<:Colorant}
+    Cb = base_colorant_type(C)
+    isconcretetype(C) && C === Cb && return _arith_colorant_type(C) # non-parametric
+    return Cb
+end
+_arith_colorant_type(::Type{<:AbstractGray})    = Gray
+_arith_colorant_type(::Type{<:TransparentGray}) = AGray
+_arith_colorant_type(::Type{<:AbstractGrayA})   = GrayA
+_arith_colorant_type(::Type{<:AbstractRGB})     = RGB
+_arith_colorant_type(::Type{<:TransparentRGB})  = ARGB
+_arith_colorant_type(::Type{<:AbstractRGBA})    = RGBA
 
 parametric(::Type{C}, ::Type{T}) where {C,T} = C{T}
-parametric(::Type{Gray24}, ::Type{N0f8}) = Gray24
-parametric(::Type{RGB24}, ::Type{N0f8}) = RGB24
-parametric(::Type{AGray32}, ::Type{N0f8}) = AGray32
-parametric(::Type{ARGB32}, ::Type{N0f8}) = ARGB32
+parametric(::Type{C}, ::Type{T}) where {T, C<:Colorant{T}} = C # e.g. parametric(RGB24, N0f8) == RGB24
 
 # Useful for leveraging iterator algorithms. Don't use this externally, as the implementation may change.
 channels(c::AbstractGray)    = (gray(c),)

@@ -25,7 +25,7 @@ import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
 import LinearAlgebra: norm, ⋅, dot, promote_leaf_eltypes  # norm1, norm2, normInf
 import SpecialFunctions: gamma, logabsgamma, lfact
 using Statistics
-import Statistics: middle, _mean_promote
+import Statistics: middle # and `_mean_promote`
 
 export RGBRGB, complement, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm, varmult
 
@@ -242,7 +242,9 @@ complement(x::TransparentColor) = typeof(x)(complement(color(x)), alpha(x))
 middle(c::AbstractGray) = arith_colorant_type(c)(middle(gray(c)))
 middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(x), gray(y)))
 
-_mean_promote(x::MathTypes, y::MathTypes) = mapc(FixedPointNumbers.Treduce, y)
+if isdefined(Statistics, :_mean_promote)
+    Statistics._mean_promote(x::MathTypes, y::MathTypes) = mapc(FixedPointNumbers.Treduce, y)
+end
 
 (*)(f::Real, c::AbstractGray) = arith_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c))
 (*)(f::Real, c::TransparentGray) = arith_colorant_type(c){multype(typeof(f),eltype(c))}(f*gray(c), f*alpha(c))

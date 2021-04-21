@@ -53,7 +53,9 @@ if !hasmethod(isfinite, (Colorant,))
     isnan(c::Colorant) = mapreducec(isnan, |, false, c)
 end
 
-if !isdefined(ColorTypes, :nan)
+if isdefined(ColorTypes, :nan)
+    using ColorTypes: nan
+else
     nan(::Type{T}) where {T<:AbstractFloat} = convert(T, NaN)
     nan(::Type{C}) where {T<:AbstractFloat, C<:MathTypes{T}} = mapc(_ -> nan(T), zero(C))
 end

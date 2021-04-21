@@ -50,6 +50,9 @@ ColorTypes.alpha(c::GrayA32) = reinterpret(N0f8, c.color % UInt8)
 ColorTypes.comp2(c::RGBA32) = alpha(c)
 
 @testset "Colortypes" begin
+    @testset "ambiguities" begin
+        @test isempty(detect_ambiguities(ColorVectorSpace))
+    end
 
     @testset "convert" begin
         for x in (0.5, 0.5f0, NaN, NaN32, N0f8(0.5))
@@ -515,6 +518,15 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
     @testset "Custom RGB arithmetic" begin # see also the `RGBA32` cases above
         cf = RatRGB(1//10, 2//10, 3//10)
         @test cf ⋅ cf   === (Float64(red(cf))^2 + Float64(green(cf))^2 + Float64(blue(cf))^2)/3
+    end
+
+    @testset "arithmetic with Bool" begin
+        cb = Gray{Bool}(1)
+        @test @inferred(+cb) === cb
+        @test @inferred(-cb) === cb # wrapped around
+        @test_broken @inferred(one(cb) * cb) === cb
+        @test oneunit(cb) === Gray(true)
+        # TODO: add more tests (cf. issue #148)
     end
 
     @testset "Complement" begin

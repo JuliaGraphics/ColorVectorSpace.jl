@@ -94,14 +94,7 @@ acctype(::Type{T1}, ::Type{T2}) where {T1,T2} = acctype(promote_type(T1, T2))
 
 acc(x::Number) = convert(acctype(typeof(x)), x)
 
-# Scalar binary RGB operations require the same RGB type for each element,
-# otherwise we don't know which to return
-color_rettype(::Type{A}, ::Type{B}) where {A<:AbstractRGB,B<:AbstractRGB} = _color_rettype(base_colorant_type(A), base_colorant_type(B))
-color_rettype(::Type{A}, ::Type{B}) where {A<:AbstractGray,B<:AbstractGray} = _color_rettype(base_colorant_type(A), base_colorant_type(B))
-color_rettype(::Type{A}, ::Type{B}) where {A<:TransparentRGB,B<:TransparentRGB} = _color_rettype(base_colorant_type(A), base_colorant_type(B))
-color_rettype(::Type{A}, ::Type{B}) where {A<:TransparentGray,B<:TransparentGray} = _color_rettype(base_colorant_type(A), base_colorant_type(B))
-_color_rettype(::Type{C}, ::Type{C}) where {C<:Colorant} = C
-
+color_rettype(::Type{C1}, ::Type{C2}) where {C1, C2} = base_colorant_type(promote_type(C1, C2))
 color_rettype(c1::Colorant, c2::Colorant) = color_rettype(typeof(c1), typeof(c2))
 
 arith_colorant_type(::C) where {C<:Colorant} = arith_colorant_type(C)
@@ -433,11 +426,7 @@ end
 function __init__()
     if isdefined(Base, :Experimental) && isdefined(Base.Experimental, :register_error_hint)
         Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
-            if exc.f === _color_rettype && length(argtypes) >= 2
-                # Color is not necessary, this is just to show it's possible.
-                A, B = argtypes
-                A !== B && print(io, "\nIn binary operation with $A and $B, the return type is ambiguous")
-            elseif exc.f === dot && length(argtypes) == 2
+            if exc.f === dot && length(argtypes) == 2
                 if any(C -> C <: Union{TransparentGray, TransparentRGB}, argtypes)
                     print(io, "\n`dot` (or `⋅`) for transparent colors is not supported ")
                     print(io, "because the normalization is designed for opaque grays and RGBs.")

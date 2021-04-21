@@ -69,7 +69,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
     @testset "nan" begin
         function make_checked_nan(::Type{T}) where T
             x = nan(T)
-            isa(x, T) && isnan(x)
+            isa(x, T) && mapreducec(isnan, &, true, x)
         end
         for S in (Float32, Float64)
             @test make_checked_nan(S)
@@ -78,7 +78,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
             @test make_checked_nan(GrayA{S})
             @test make_checked_nan(RGB{S})
             @test make_checked_nan(ARGB{S})
-            @test make_checked_nan(ARGB{S})
+            @test make_checked_nan(RGBA{S})
         end
     end
 

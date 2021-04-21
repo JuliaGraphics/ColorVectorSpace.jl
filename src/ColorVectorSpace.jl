@@ -324,10 +324,10 @@ julia> a, b = RGB(0.2f0, 0.3f0, 0.5f0), RGB(0.77f0, 0.11f0, 0.22f0)
 (RGB{Float32}(0.2f0,0.3f0,0.5f0), RGB{Float32}(0.77f0,0.11f0,0.22f0))
 
 julia> a ⊗ b
-RGBRGB{Float32}(
- 0.154f0  0.022f0  0.044f0
- 0.231f0  0.033f0  0.066f0
- 0.385f0  0.055f0  0.11f0 )
+RGBRGB{Float32}:
+ 0.154  0.022  0.044
+ 0.231  0.033  0.066
+ 0.385  0.055  0.11
 """
 struct RGBRGB{T}
     rr::T
@@ -340,16 +340,29 @@ struct RGBRGB{T}
     gb::T
     bb::T
 end
+function RGBRGB{T}(mat::AbstractMatrix) where T
+    size(mat) == (3, 3) || throw(DimensionMismatch("`mat` must be a 3×3 matrix."))
+    @inbounds RGBRGB{T}(NTuple{9, T}(T(mat[I]) for I in CartesianIndices(mat))...)
+end
+RGBRGB(mat::AbstractMatrix{T}) where T = RGBRGB{T}(mat)
+
 Base.eltype(::Type{RGBRGB{T}}) where T = T
 Base.Matrix{T}(p::RGBRGB) where T = T[p.rr p.rg p.rb;
                                       p.gr p.gg p.gb;
                                       p.br p.bg p.bb]
 Base.Matrix(p::RGBRGB{T}) where T = Matrix{T}(p)
 
-function Base.show(io::IO, p::RGBRGB)
-    print(io, "RGBRGB{", eltype(p), "}(\n")
-    Base.print_matrix(io, Matrix(p))
-    print(io, ')')
+function Base.show(io::IO, @nospecialize(p::RGBRGB))
+    print(io, "RGBRGB{", eltype(p), "}([")
+    ioc = IOContext(io, :typeinfo => eltype(p))
+    print(ioc, p.rr, " ", p.rg, " ", p.rb, "; ")
+    print(ioc, p.gr, " ", p.gg, " ", p.gb, "; ")
+    print(ioc, p.br, " ", p.bg, " ", p.bb, "])")
+end
+function Base.show(io::IO, ::MIME"text/plain", @nospecialize(p::RGBRGB))
+    println(io, "RGBRGB{", eltype(p), "}:")
+    ioc = IOContext(io, :typeinfo => eltype(p), :compact => get(io, :compact, true))
+    Base.print_matrix(ioc, Matrix(p))
 end
 
 Base.zero(::Type{RGBRGB{T}}) where T = (z = zero(T); RGBRGB(z, z, z, z, z, z, z, z, z))
@@ -394,10 +407,10 @@ julia> varmult(⊙, cs)
 RGB{Float64}(0.045,0.0,0.020000000000000004)
 
 julia> varmult(⊗, cs)
-RGBRGB{Float64}(
+RGBRGB{Float64}:
   0.045  0.0  -0.03
   0.0    0.0   0.0
- -0.03   0.0   0.020000000000000004)
+ -0.03   0.0   0.02
 ```
 """
 function varmult(op, itr; corrected::Bool=true, dims=:, mean=Statistics.mean(itr; dims=dims))

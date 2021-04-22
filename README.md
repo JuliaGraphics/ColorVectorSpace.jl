@@ -65,7 +65,7 @@ This package supports three different notions of multiplication: the inner produ
 
 ```julia
 julia> c1, c2 = RGB(0.2, 0.3, 0.4), RGB(0.5, 0.3, 0.2)
-(RGB{Float64}(0.2,0.3,0.4), RGB{Float64}(0.5,0.3,0.1))
+(RGB{Float64}(0.2,0.3,0.4), RGB{Float64}(0.5,0.3,0.2))
 
 julia> c1⋅c2     # \cdot<TAB> # or dot(c1, c2)
 0.09000000000000001
@@ -75,10 +75,10 @@ julia> c1⊙c2     # \odot<TAB> # or hadamard(c1, c2)
 RGB{Float64}(0.1,0.09,0.08000000000000002)
 
 julia> c1⊗c2    # \otimes<TAB> # or tensor(c1, c2)
-RGBRGB{Float64}(
- 0.1   0.06  0.04000000000000001
+RGBRGB{Float64}:
+ 0.1   0.06  0.04
  0.15  0.09  0.06
- 0.2   0.12  0.08000000000000002)
+ 0.2   0.12  0.08
 ```
 
 Note that `c1⋅c2 = (c1.r*c2.r + c1.g*c2.g + c1.b*c2.b)/3`, where the division by 3 ensures the equivalence `norm(x) == norm(Gray(x)) == norm(RGB(x, x, x))`.
@@ -105,8 +105,8 @@ julia> varmult(⊙, cs)
 RGB{Float64}(0.045,0.0,0.020000000000000004)
 
 julia> varmult(⊗, cs)
-RGBRGB{Float64}(
+RGBRGB{Float64}:
   0.045  0.0  -0.03
   0.0    0.0   0.0
- -0.03   0.0   0.020000000000000004)
+ -0.03   0.0   0.02
 ```

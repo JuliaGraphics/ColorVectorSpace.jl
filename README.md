@@ -110,3 +110,20 @@ RGBRGB{Float64}:
   0.0    0.0   0.0
  -0.03   0.0   0.02
 ```
+
+### `abs` and `abs2`
+
+To begin with, there is no general and straightforward definition of the
+absolute value of a vector.
+There are roughly two possible definitions of `abs`/`abs2`: as a channel-wise
+operator or as a function which returns a real number based on the norm.
+For the latter, there are also variations in the definition of norm.
+
+In ColorVectorSpace v0.9 and later, `abs` is defined as a channel-wise operator
+and `abs2` is undefined.
+The following are alternatives for the definitions in ColorVectorSpace v0.8 and
+earlier.
+```julia
+_abs(c)  = mapreducec(v->abs(float(v)), +, 0, c)
+_abs2(c) = mapreducec(v->float(v)^2, +, 0, c)
+```

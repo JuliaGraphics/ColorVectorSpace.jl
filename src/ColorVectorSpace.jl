@@ -188,11 +188,15 @@ copy(c::MathTypes) = c
 abs(c::MathTypes) = mapc(abs, c)
 norm(c::MathTypes, p::Real=2) = (cc = channels(c); norm(cc, p)/(p == 0 ? length(cc) : length(cc)^(1/p)))
 (⊙)(a::C, b::C) where {C<:MathTypes} = mapc(*, a, b)
+(⋅)(a::C, b::C) where {C<:MathTypes} = throw(MethodError(dot, (a, b)))
+(⊗)(a::C, b::C) where {C<:MathTypes} = throw(MethodError(tensor, (a, b)))
 
 ## Mixed types
 (+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)
 (-)(a::MathTypes, b::MathTypes) = (-)(promote(a, b)...)
 (⊙)(a::MathTypes, b::MathTypes) = (⊙)(promote(a, b)...)
+(⋅)(a::MathTypes, b::MathTypes) = (⋅)(promote(a, b)...) # not fully supported, but used for error hints
+(⊗)(a::MathTypes, b::MathTypes) = (⊗)(promote(a, b)...) # not fully supported, but used for error hints
 
 
 # Scalar RGB
@@ -220,8 +224,10 @@ end
 (-)(a::TransparentRGB, b::TransparentRGB) = rettype(-, a, b)(red(a)-red(b), green(a)-green(b), blue(a)-blue(b), alpha(a)-alpha(b))
 
 # New multiplication operators
-(⋅)(x::AbstractRGB, y::AbstractRGB)  = (T = acctype(eltype(x), eltype(y)); T(red(x))*T(red(y)) + T(green(x))*T(green(y)) + T(blue(x))*T(blue(y)))/3
-(⋅)(x::Union{AbstractRGB,AbstractGray}, y::Union{AbstractRGB,AbstractGray})  = ⋅(promote(x, y)...)
+function (⋅)(x::AbstractRGB, y::AbstractRGB)
+    T = acctype(eltype(x), eltype(y))
+    (T(red(x))*T(red(y)) + T(green(x))*T(green(y)) + T(blue(x))*T(blue(y)))/3
+end
 # ⊗ defined below
 
 
@@ -277,8 +283,8 @@ middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(
 (-)(a::AbstractGray, b::Number) = base_color_type(a)(gray(a)-b)
 (-)(a::Number, b::AbstractGray) = base_color_type(b)(a-gray(b))
 
-(⋅)(x::AbstractGray, y::AbstractGray) = gray(x)*gray(y)
-(⊗)(x::AbstractGray, y::AbstractGray) = x ⊙ y
+(⋅)(x::C, y::C) where {C<:AbstractGray} = gray(x)*gray(y)
+(⊗)(x::C, y::C) where {C<:AbstractGray} = x ⊙ y
 
 max(a::T, b::T) where {T<:AbstractGray} = T(max(gray(a),gray(b)))
 max(a::AbstractGray, b::AbstractGray) = max(promote(a,b)...)
@@ -384,7 +390,6 @@ function ⊗(a::AbstractRGB, b::AbstractRGB)
     agbr, abbg, arbb, abbr, arbg, agbb = ag*br, ab*bg, ar*bb, ab*br, ar*bg, ag*bb
     return RGBRGB(ar*br, agbr, abbr, arbg, ag*bg, abbg, arbb, agbb, ab*bb)
 end
-⊗(a::Union{AbstractRGB,AbstractGray}, b::Union{AbstractRGB,AbstractGray}) = ⊗(promote(a, b)...)
 
 """
     varmult(op, itr; corrected::Bool=true, mean=Statistics.mean(itr), dims=:)
@@ -432,6 +437,26 @@ function __init__()
                 # Color is not necessary, this is just to show it's possible.
                 A, B = argtypes
                 A !== B && print(io, "\nIn binary operation with $A and $B, the return type is ambiguous")
+            elseif exc.f === dot && length(argtypes) == 2
+                if any(C -> C <: Union{TransparentGray, TransparentRGB}, argtypes)
+                    print(io, "\n`dot` (or `⋅`) for transparent colors is not supported ")
+                    print(io, "because the normalization is designed for opaque grays and RGBs.")
+                    print(io, "\nYou can use `reducec(+, 0, mapc(float, a) ⊙ mapc(float, b))` ")
+                    print(io, "to get the dot product without normalization.")
+                end
+            elseif exc.f === tensor && length(argtypes) == 2
+                if any(C -> C <: Union{TransparentGray, TransparentRGB}, argtypes)
+                    print(io, "\n`tensor` (or `⊗`) for transparent colors is not supported ")
+                    print(io, "due to the non-high demand.")
+                end
+            elseif exc.f === abs2 && length(argtypes) == 1
+                C = argtypes[1]
+                if C <: MathTypes
+                    print(io, "\nIt is ambiguous whether `abs2(::$C)` should return a real number ")
+                    print(io, "or a color object.")
+                    print(io, "\nYou can use `_abs2(c) = mapreducec(v->float(v)^2, +, 0, c)` ")
+                    print(io, "to get the value compatible with ColorVectorSpace v0.8 or earlier.")
+                end
             end
         end
     end

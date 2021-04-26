@@ -315,6 +315,15 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test @inferred(GrayA32(0.8,0.2)/2)   === GrayA(0.5f0*N0f8(0.8),0.5f0*N0f8(0.2))
         @test @inferred(GrayA32(0.8,0.2)/2.0) === GrayA(0.4,0.1)
         @test @inferred(GrayA32(1, 0.4) - GrayA32(0.2, 0.2)) === GrayA32(0.8, 0.2)
+
+        # Multiplication
+        cf = AGray{Float32}(0.8, 0.2)
+        @test_throws MethodError cf * cf
+        @test_throws MethodError cf ⋅ cf
+        @test_throws MethodError cf ⊗ cf
+        cf64 = mapc(Float64, cf)
+        @test @inferred(cf ⊙ cf)   === AGray{Float32}(0.8f0^2, 0.2f0^2)
+        @test @inferred(cf ⊙ cf64) === AGray{Float64}(0.8f0*(0.8f0*1.0), 0.2f0*(0.2f0*1.0))
     end
 
     @testset "Arithemtic with RGB" begin
@@ -508,6 +517,15 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test @inferred(RGBA32(1,0,0,0.8)/2)   === RGBA(0.5f0,0,0,0.5f0*N0f8(0.8))
         @test @inferred(RGBA32(1,0,0,0.8)/2.0) === RGBA(0.5,0,0,0.4)
         @test @inferred(RGBA32(1, 0, 0, 0.2) + RGBA32(0, 0, 1, 0.2)) === RGBA32(1, 0, 1, 0.4)
+
+        # Multiplication
+        @test_throws MethodError cf * cf
+        @test_throws MethodError cf ⋅ cf
+        @test_throws MethodError cf ⊗ cf
+        cf64 = mapc(Float64, cf)
+        @test @inferred(cf ⊙ cf)   === RGBA{Float32}(0.1f0^2, 0.2f0^2, 0.3f0^2, 0.4f0^2)
+        @test @inferred(cf ⊙ cf64) === RGBA{Float64}(0.1f0*(0.1f0*1.0), 0.2f0*(0.2f0*1.0),
+                                                     0.3f0*(0.3f0*1.0), 0.4f0*(0.4f0*1.0))
     end
 
     @testset "Mixed-type arithmetic" begin
@@ -524,11 +542,28 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test ARGB32(0.4, 0, 0.2, 0.5) + Gray24(0.4)   === ARGB32(0.8, 0.4, 0.6, 0.5N0f8+1N0f8)
         @test ARGB32(0.4, 0, 0.2, 0.5) + AGray32(0.4, 0.2) === ARGB32(0.8, 0.4, 0.6, 0.5N0f8+0.2N0f8)
 
-        g, rgb = Gray(0.2), RGB(0.1, 0.2, 0.3)
-        @test g ⋅ rgb == rgb ⋅ g ≈ 0.2*(0.1 + 0.2 + 0.3)/3
-        @test g ⊙ rgb == rgb ⊙ g ≈ RGB(0.2*0.1, 0.2^2, 0.2*0.3)
-        @test g ⊗ rgb == RGB(g) ⊗ rgb
-        @test rgb ⊗ g == rgb ⊗ RGB(g)
+        g, rgb = Gray{Float32}(0.2), RGB{Float64}(0.1, 0.2, 0.3)
+        ag, argb = AGray{Float64}(0.2, 0.8), ARGB{Float32}(0.1, 0.2, 0.3, 0.4)
+        @test g ⋅ rgb === rgb ⋅ g === 0.2f0*(0.1 + 0.2 + 0.3)/3
+        @test_throws MethodError g ⋅ ag
+        @test_throws MethodError g ⋅ argb
+        @test_throws MethodError ag ⋅ rgb
+        @test_throws MethodError ag ⋅ argb
+        @test_throws MethodError rgb ⋅ argb
+        @test g ⊙ rgb === rgb ⊙ g === RGB{Float64}(0.2f0*0.1, 0.2f0*0.2, 0.2f0*0.3)
+        @test g ⊙ ag === ag ⊙ g === AGray{Float64}(0.2f0*0.2, 1.0f0*0.8)
+        @test g ⊙ argb === argb ⊙ g === ARGB{Float32}(0.2f0*0.1f0, 0.2f0*0.2f0, 0.2f0*0.3f0, 1.0f0*0.4f0)
+        @test ag ⊙ rgb === rgb ⊙ ag === ARGB{Float64}(0.2*0.1, 0.2*0.2, 0.2*0.3, 0.8*1.0)
+        @test ag ⊙ argb === argb ⊙ ag === ARGB{Float64}(0.2*0.1f0, 0.2*0.2f0, 0.2*0.3f0, 0.8*0.4f0)
+        @test rgb ⊙ argb === argb ⊙ rgb === ARGB{Float64}(0.1*0.1f0, 0.2*0.2f0, 0.3*0.3f0, 1.0*0.4f0)
+        @test g ⊗ rgb === RGB(g) ⊗ rgb
+        @test rgb ⊗ g === rgb ⊗ RGB(g)
+        @test Matrix(g ⊗ rgb) == Matrix(rgb ⊗ g)'
+        @test_throws MethodError g ⊗ ag
+        @test_throws MethodError g ⊗ argb
+        @test_throws MethodError ag ⊗ rgb
+        @test_throws MethodError ag ⊗ argb
+        @test_throws MethodError rgb ⊗ argb
     end
 
     @testset "Custom RGB arithmetic" begin # see also the `RGBA32` cases above

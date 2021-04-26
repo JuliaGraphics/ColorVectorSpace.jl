@@ -187,10 +187,12 @@ copy(c::MathTypes) = c
 (/)(c::MathTypes, f::Integer) = (one(eltype(c))/f)*c
 abs(c::MathTypes) = mapc(abs, c)
 norm(c::MathTypes, p::Real=2) = (cc = channels(c); norm(cc, p)/(p == 0 ? length(cc) : length(cc)^(1/p)))
+(⊙)(a::C, b::C) where {C<:MathTypes} = mapc(*, a, b)
 
 ## Mixed types
 (+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)
 (-)(a::MathTypes, b::MathTypes) = (-)(promote(a, b)...)
+(⊙)(a::MathTypes, b::MathTypes) = (⊙)(promote(a, b)...)
 
 
 # Scalar RGB
@@ -220,8 +222,6 @@ end
 # New multiplication operators
 (⋅)(x::AbstractRGB, y::AbstractRGB)  = (T = acctype(eltype(x), eltype(y)); T(red(x))*T(red(y)) + T(green(x))*T(green(y)) + T(blue(x))*T(blue(y)))/3
 (⋅)(x::Union{AbstractRGB,AbstractGray}, y::Union{AbstractRGB,AbstractGray})  = ⋅(promote(x, y)...)
-(⊙)(x::C, y::C) where C<:AbstractRGB = base_color_type(C)(red(x)*red(y), green(x)*green(y), blue(x)*blue(y))
-(⊙)(x::Union{AbstractRGB,AbstractGray}, y::Union{AbstractRGB,AbstractGray})  = ⊙(promote(x, y)...)
 # ⊗ defined below
 
 
@@ -278,9 +278,7 @@ middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(
 (-)(a::Number, b::AbstractGray) = base_color_type(b)(a-gray(b))
 
 (⋅)(x::AbstractGray, y::AbstractGray) = gray(x)*gray(y)
-(⊙)(x::C, y::C) where C<:AbstractGray = base_color_type(C)(gray(x)*gray(y))
-(⊙)(x::AbstractGray, y::AbstractGray) = ⊙(promote(x, y)...)
-(⊗)(x::AbstractGray, y::AbstractGray) = ⊙(x, y)
+(⊗)(x::AbstractGray, y::AbstractGray) = x ⊙ y
 
 max(a::T, b::T) where {T<:AbstractGray} = T(max(gray(a),gray(b)))
 max(a::AbstractGray, b::AbstractGray) = max(promote(a,b)...)
@@ -304,7 +302,7 @@ if !hasmethod(isless, Tuple{AbstractGray,Real})  # planned for ColorTypes 0.11
     isless(r::Real, c::AbstractGray) = isless(r, gray(c))
 end
 
-dotc(x::T, y::T) where {T<:AbstractGray} = acc(gray(x))*acc(gray(y))
+dotc(x::C, y::C) where {C<:AbstractGray} = acc(gray(x))*acc(gray(y))
 dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
 
 typemin(::Type{C}) where {C<:AbstractGray} = C(typemin(eltype(C)))

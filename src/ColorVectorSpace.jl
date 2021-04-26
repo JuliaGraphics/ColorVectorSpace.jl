@@ -32,6 +32,7 @@ export RGBRGB, complement, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm
 MathTypes{T,C} = Union{AbstractRGB{T},TransparentRGB{C,T},AbstractGray{T},TransparentGray{C,T}}
 
 ## Version compatibility with ColorTypes
+### TODO: Remove the definitons other than `one` when dropping ColorTypes v0.10 support
 
 if !hasmethod(zero, (Type{TransparentGray},))
     zero(::Type{C}) where {C<:TransparentGray} = C(0,0)
@@ -40,7 +41,7 @@ if !hasmethod(zero, (Type{TransparentGray},))
     zero(p::Colorant) = zero(typeof(p))
 end
 
-if !hasmethod(one, (Type{TransparentGray},))
+if !hasmethod(one, (Type{TransparentGray},)) # specification change is planned for ColorTypes v0.12
     Base.one(::Type{C}) where {C<:TransparentGray} = C(1,1)
     Base.one(::Type{C}) where {C<:AbstractRGB}     = C(1,1,1)
     Base.one(::Type{C}) where {C<:TransparentRGB}  = C(1,1,1,1)
@@ -51,6 +52,16 @@ if !hasmethod(isfinite, (Colorant,))
     isfinite(c::Colorant) = mapreducec(isfinite, &, true, c)
     isinf(c::Colorant) = mapreducec(isinf, |, false, c)
     isnan(c::Colorant) = mapreducec(isnan, |, false, c)
+end
+
+if which(<, Tuple{AbstractGray,AbstractGray}).module === Base
+    (<)(g1::AbstractGray, g2::AbstractGray) = gray(g1) < gray(g2)
+    (<)(c::AbstractGray, r::Real) = gray(c) < r
+    (<)(r::Real, c::AbstractGray) = r < gray(c)
+end
+if !hasmethod(isless, Tuple{AbstractGray,Real})
+    isless(c::AbstractGray, r::Real) = isless(gray(c), r)
+    isless(r::Real, c::AbstractGray) = isless(r, gray(c))
 end
 
 if isdefined(ColorTypes, :nan)
@@ -290,16 +301,6 @@ min(a::AbstractGray, b::Number) = min(promote(a,b)...)
 
 atan(x::AbstractGray, y::AbstractGray)  = atan(gray(x), gray(y))
 hypot(x::AbstractGray, y::AbstractGray) = hypot(gray(x), gray(y))
-
-if which(<, Tuple{AbstractGray,AbstractGray}).module === Base  # planned for ColorTypes 0.11
-    (<)(g1::AbstractGray, g2::AbstractGray) = gray(g1) < gray(g2)
-    (<)(c::AbstractGray, r::Real) = gray(c) < r
-    (<)(r::Real, c::AbstractGray) = r < gray(c)
-end
-if !hasmethod(isless, Tuple{AbstractGray,Real})  # planned for ColorTypes 0.11
-    isless(c::AbstractGray, r::Real) = isless(gray(c), r)
-    isless(r::Real, c::AbstractGray) = isless(r, gray(c))
-end
 
 dotc(x::C, y::C) where {C<:AbstractGray} = acc(gray(x))*acc(gray(y))
 dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)

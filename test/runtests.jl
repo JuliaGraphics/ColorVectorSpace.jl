@@ -3,6 +3,8 @@ using ColorVectorSpace, Colors, FixedPointNumbers
 
 using Test
 
+using ColorVectorSpace: _mul
+
 n8sum(x,y) = Float64(N0f8(x)) + Float64(N0f8(y))
 
 macro test_colortype_approx_eq(a, b)
@@ -84,6 +86,15 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
 
     @testset "traits" begin
         @test floattype(Gray{N0f8}) === Gray{float(N0f8)}
+    end
+
+    @testset "_mul" begin
+        n0f8p = ((x, y) for x = N0f8(0):eps(N0f8):N0f8(1), y = N0f8(0):eps(N0f8):N0f8(1))
+        @test all(((x, y),) -> _mul(x, y) === N0f8(Float32(x) * Float32(y)), n0f8p)
+        n0f16a = N0f16(0):eps(N0f16):N0f16(1)
+        n0f16b = reinterpret(N0f16, 0xBADb)
+        @test all(a -> _mul(a, n0f16b) === N0f16(Float64(a) * 0xBADb / 0xFFFF), n0f16a)
+        @test _mul(0.6N0f8, 0.2N0f16) === _mul(0.2N0f16, 0.6N0f8) === 0.12N0f16
     end
 
     @testset "Arithmetic with Gray" begin
@@ -397,6 +408,8 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test RGB24(1,0,0)/2.0 === RGB(0.5,0,0)
         # issue #133
         @test RGB24(1, 0, 0) + RGB24(0, 0, 1) === RGB24(1, 0, 1)
+        # issue #166
+        @test 0.6N0f8 * RGB{N0f16}(0.2) === RGB{N0f16}(0.12, 0.12, 0.12)
 
         # Multiplication
         @test_throws MethodError cf*cf

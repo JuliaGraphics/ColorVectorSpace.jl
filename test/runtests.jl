@@ -364,8 +364,6 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test_throws MethodError sum(abs2, RGB(0.1,0.2,0.3))
         @test norm(RGB(0.1,0.2,0.3)) ≈ sqrt(0.14)/sqrt(3)
 
-        @test_throws MethodError RGBX(0, 0, 1) + XRGB(1, 0, 0)
-
         acu = RGB{N0f8}[cu]
         acf = RGB{Float32}[cf]
         @test typeof(acu+acf) == Vector{RGB{Float32}}
@@ -529,7 +527,14 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
     end
 
     @testset "Mixed-type arithmetic" begin
+        # issue 155
+        @test @inferred(Gray(0.2f0) + Gray24(0.2)) === Gray{Float32}(0.2 + 0.2N0f8)
+        @test @inferred(RGBX(0, 0, 1) + XRGB(1, 0, 0)) === XRGB{N0f8}(1, 0, 1)
+        @test @inferred(BGR(0, 0, 1) + RGB24(1, 0, 0)) === RGB{N0f8}(1, 0, 1)
+        @test_throws Exception HSV(100, 0.2, 0.4) + Gray(0.2)
+
         @test AGray32(0.2, 0.4) + Gray24(0.2) === AGray32(0.4, 0.4N0f8+1N0f8)
+        @test AGray32(0.2, 0.4) + Gray(0.2f0) === AGray{Float32}(0.2+0.2N0f8, 0.4N0f8+1)
         @test RGB(1, 0, 0)      + Gray(0.2f0) === RGB{Float32}(1.2, 0.2, 0.2)
         @test RGB(1, 0, 0)      - Gray(0.2f0) === RGB{Float32}(0.8, -0.2, -0.2)
         @test RGB24(1, 0, 0)    + Gray(0.2f0) === RGB{Float32}(1.2, 0.2, 0.2)
@@ -541,6 +546,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test RGB24(0.4, 0.6, 0.5) - AGray32(0.4, 0.2) === ARGB32(0, 0.2, 0.1, 0.8)
         @test ARGB32(0.4, 0, 0.2, 0.5) + Gray24(0.4)   === ARGB32(0.8, 0.4, 0.6, 0.5N0f8+1N0f8)
         @test ARGB32(0.4, 0, 0.2, 0.5) + AGray32(0.4, 0.2) === ARGB32(0.8, 0.4, 0.6, 0.5N0f8+0.2N0f8)
+        @test ARGB32(0.4, 0, 0.2, 0.5) + RGB(0.4f0, 0, 0) === ARGB{Float32}(0.4N0f8+0.4, 0, 0.2N0f8, 0.5N0f8+1)
 
         g, rgb = Gray{Float32}(0.2), RGB{Float64}(0.1, 0.2, 0.3)
         ag, argb = AGray{Float64}(0.2, 0.8), ARGB{Float32}(0.1, 0.2, 0.3, 0.4)

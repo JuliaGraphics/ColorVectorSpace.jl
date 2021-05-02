@@ -140,6 +140,24 @@ channels(c::TransparentGray) = (gray(c), alpha(c))
 channels(c::AbstractRGB)     = (red(c), green(c), blue(c))
 channels(c::TransparentRGB)  = (red(c), green(c), blue(c), alpha(c))
 
+if reinterpret(N0f16, 0xBADb)^2 === N0f16(float(reinterpret(N0f16, 0xBADb))^2)
+    function _mul(x::N0f8, y::N0f8)
+        m = widemul(reinterpret(x), reinterpret(y))
+        z = (((m + 0x80) >> 0x8) + m + 0x80) >> 0x8
+        reinterpret(N0f8, z % UInt8)
+    end
+    function _mul(x::N0f16, y::N0f16)
+        m = widemul(reinterpret(x), reinterpret(y))
+        z = (((m + 0x8000) >> 0x10) + m + 0x8000) >> 0x10
+        reinterpret(N0f16, z % UInt16)
+    end
+end
+_mul(x::T, y::T) where {T} = x * y
+_mul(x, y) = (T = multype(typeof(x), typeof(y)); _mul(T(x), T(y)))
+
+_mapc(::Type{C}, f, c) where {C<:MathTypes} = C(f.(channels(c))...)
+_mapc(::Type{C}, f, a, b) where {C<:MathTypes} = C(f.(channels(a), channels(b))...)
+
 ## Generic algorithms
 Base.add_sum(c1::MathTypes,c2::MathTypes) = mapc(Base.add_sum, c1, c2)
 Base.reduce_first(::typeof(Base.add_sum), c::MathTypes) = mapc(x->Base.reduce_first(Base.add_sum, x), c)
@@ -182,6 +200,7 @@ complement(x::TransparentColor) = typeof(x)(complement(color(x)), alpha(x))
 
 # Common
 copy(c::MathTypes) = c
+(*)(f::Real, c::MathTypes) = _mapc(rettype(*, f, c), v -> _mul(f, v), c)
 (*)(c::MathTypes, f::Real) = (*)(f, c)
 (+)(c::MathTypes) = mapc(+, c)
 (+)(c::MathTypes{Bool}) = c
@@ -191,7 +210,7 @@ copy(c::MathTypes) = c
 (/)(c::MathTypes, f::Integer) = (one(eltype(c))/f)*c
 abs(c::MathTypes) = mapc(abs, c)
 norm(c::MathTypes, p::Real=2) = (cc = channels(c); norm(cc, p)/(p == 0 ? length(cc) : length(cc)^(1/p)))
-(⊙)(a::C, b::C) where {C<:MathTypes} = mapc(*, a, b)
+(⊙)(a::C, b::C) where {C<:MathTypes} = _mapc(rettype(*, a, b), _mul, a, b)
 (⋅)(a::C, b::C) where {C<:MathTypes} = throw(MethodError(dot, (a, b)))
 (⊗)(a::C, b::C) where {C<:MathTypes} = throw(MethodError(tensor, (a, b)))
 
@@ -204,16 +223,6 @@ norm(c::MathTypes, p::Real=2) = (cc = channels(c); norm(cc, p)/(p == 0 ? length(
 
 
 # Scalar RGB
-(*)(f::Real, c::AbstractRGB)    = rettype(*, f, c)(f*red(c), f*green(c), f*blue(c))
-(*)(f::Real, c::TransparentRGB) = rettype(*, f, c)(f*red(c), f*green(c), f*blue(c), f*alpha(c))
-function (*)(f::Real, c::AbstractRGB{T}) where T<:Normed
-    fs = f*(1/reinterpret(oneunit(T)))
-    rettype(*, f, c)(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
-end
-function (*)(f::Normed, c::AbstractRGB{T}) where T<:Normed
-    fs = reinterpret(f)*(1/widen(reinterpret(oneunit(T)))^2)
-    rettype(*, f, c)(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
-end
 function (/)(c::AbstractRGB{T}, f::Real) where T<:Normed
     fs = (one(f)/reinterpret(oneunit(T)))/f
     rettype(/, c, f)(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
@@ -270,14 +279,12 @@ end
 middle(c::AbstractGray) = arith_colorant_type(c)(middle(gray(c)))
 middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(x), gray(y)))
 
-(*)(f::Real, c::AbstractGray)    = rettype(*, f, c)(f*gray(c))
-(*)(f::Real, c::TransparentGray) = rettype(*, f, c)(f*gray(c), f*alpha(c))
 (/)(n::Number, c::AbstractGray) = base_color_type(c)(n/gray(c))
 (+)(a::AbstractGray,    b::AbstractGray)    = rettype(+, a, b)(gray(a)+gray(b))
 (+)(a::TransparentGray, b::TransparentGray) = rettype(+, a, b)(gray(a)+gray(b), alpha(a)+alpha(b))
 (-)(a::AbstractGray,    b::AbstractGray)    = rettype(-, a, b)(gray(a)-gray(b))
 (-)(a::TransparentGray, b::TransparentGray) = rettype(-, a, b)(gray(a)-gray(b), alpha(a)-alpha(b))
-(*)(a::AbstractGray, b::AbstractGray) = rettype(*, a, b)(gray(a)*gray(b))
+(*)(a::AbstractGray, b::AbstractGray) = a ⊙ b
 (^)(a::AbstractGray, b::Integer) = rettype(^, a, b)(gray(a)^convert(Int,b))
 (^)(a::AbstractGray, b::Real)    = rettype(^, a, b)(gray(a)^b)
 (/)(a::C, b::C) where C<:AbstractGray = base_color_type(C)(gray(a)/gray(b))
@@ -287,7 +294,7 @@ middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(
 (-)(a::AbstractGray, b::Number) = base_color_type(a)(gray(a)-b)
 (-)(a::Number, b::AbstractGray) = base_color_type(b)(a-gray(b))
 
-(⋅)(x::C, y::C) where {C<:AbstractGray} = gray(x)*gray(y)
+(⋅)(x::C, y::C) where {C<:AbstractGray} = _mul(gray(x), gray(y))
 (⊗)(x::C, y::C) where {C<:AbstractGray} = x ⊙ y
 
 max(a::T, b::T) where {T<:AbstractGray} = T(max(gray(a),gray(b)))
@@ -302,8 +309,7 @@ min(a::AbstractGray, b::Number) = min(promote(a,b)...)
 atan(x::AbstractGray, y::AbstractGray)  = atan(gray(x), gray(y))
 hypot(x::AbstractGray, y::AbstractGray) = hypot(gray(x), gray(y))
 
-dotc(x::C, y::C) where {C<:AbstractGray} = acc(gray(x))*acc(gray(y))
-dotc(x::AbstractGray, y::AbstractGray) = dotc(promote(x, y)...)
+dotc(x::AbstractGray, y::AbstractGray) = _mul(acc(gray(x)), acc(gray(y)))
 
 typemin(::Type{C}) where {C<:AbstractGray} = C(typemin(eltype(C)))
 typemax(::Type{C}) where {C<:AbstractGray} = C(typemax(eltype(C)))

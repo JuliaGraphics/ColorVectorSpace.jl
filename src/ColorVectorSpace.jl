@@ -90,6 +90,7 @@ end
 multype(::Type{A}, ::Type{B}) where {A,B} = coltype(typeof(zero(A)*zero(B)))
 sumtype(::Type{A}, ::Type{B}) where {A,B} = coltype(typeof(zero(A)+zero(B)))
 divtype(::Type{A}, ::Type{B}) where {A,B} = coltype(typeof(zero(A)/oneunit(B)))
+divtype(::Type{A}, ::Type{B}) where {A,B<:FixedPoint} = coltype(typeof(zero(A)/typemax(B)))
 powtype(::Type{A}, ::Type{B}) where {A,B} = coltype(typeof(zero(A)^zero(B)))
 sumtype(a::Colorant, b::Colorant) = coltype(sumtype(eltype(a),eltype(b)))
 
@@ -131,6 +132,7 @@ rettype(::typeof(-), a, b) = parametric(color_rettype(a, b), sumtype(a, b))
 rettype(::typeof(*), a, b) = parametric(color_rettype(a, b), multype(eltype(a), eltype(b))) # gray * gray
 rettype(::typeof(*), a::Real, b) = arith_colorant_type(b){multype(typeof(a), eltype(b))}
 rettype(::typeof(/), a, b::Real) = arith_colorant_type(a){divtype(eltype(a), typeof(b))}
+rettype(::typeof(/), a, b) = arith_colorant_type(a){divtype(eltype(a), eltype(b))}
 rettype(::typeof(^), a, b)          = arith_colorant_type(a){powtype(eltype(a), typeof(b))}
 rettype(::typeof(^), a, b::Integer) = arith_colorant_type(a){powtype(eltype(a), Int)}
 
@@ -155,8 +157,21 @@ end
 _mul(x::T, y::T) where {T} = x * y
 _mul(x, y) = (T = multype(typeof(x), typeof(y)); _mul(T(x), T(y)))
 
-_mapc(::Type{C}, f, c) where {C<:MathTypes} = C(f.(channels(c))...)
-_mapc(::Type{C}, f, a, b) where {C<:MathTypes} = C(f.(channels(a), channels(b))...)
+function _div(x::T, y::T) where {T <: FixedPoint}
+    F = floattype(T)
+    # range check should be done in the color constructor
+    F(reinterpret(x)) / F(reinterpret(y))
+end
+function _div(x::AbstractFloat, y::Normed)
+    F = divtype(typeof(x), typeof(y))
+    F(x) * F(reinterpret(oneunit(y))) / F(reinterpret(y))
+end
+_div(x::AbstractFloat, y::Integer) = _mul(x, oneunit(x) / y)
+_div(x::T, y::T) where {T} = x / y
+_div(x, y) = (T = divtype(typeof(x), typeof(y)); _div(T(x), T(y)))
+
+@inline _mapc(::Type{C}, f, c) where {C<:MathTypes} = C(f.(channels(c))...)
+@inline _mapc(::Type{C}, f, a, b) where {C<:MathTypes} = C(f.(channels(a), channels(b))...)
 
 ## Generic algorithms
 Base.add_sum(c1::MathTypes,c2::MathTypes) = mapc(Base.add_sum, c1, c2)
@@ -202,12 +217,11 @@ complement(x::TransparentColor) = typeof(x)(complement(color(x)), alpha(x))
 copy(c::MathTypes) = c
 (*)(f::Real, c::MathTypes) = _mapc(rettype(*, f, c), v -> _mul(f, v), c)
 (*)(c::MathTypes, f::Real) = (*)(f, c)
+(/)(c::MathTypes, f::Real) = _mapc(rettype(/, c, f), v -> _div(v, f), c)
 (+)(c::MathTypes) = mapc(+, c)
 (+)(c::MathTypes{Bool}) = c
 (-)(c::MathTypes) = mapc(-, c)
 (-)(c::MathTypes{Bool}) = c
-(/)(c::MathTypes, f::Real) = (one(f)/f)*c
-(/)(c::MathTypes, f::Integer) = (one(eltype(c))/f)*c
 abs(c::MathTypes) = mapc(abs, c)
 norm(c::MathTypes, p::Real=2) = (cc = channels(c); norm(cc, p)/(p == 0 ? length(cc) : length(cc)^(1/p)))
 (⊙)(a::C, b::C) where {C<:MathTypes} = _mapc(rettype(*, a, b), _mul, a, b)
@@ -223,13 +237,9 @@ norm(c::MathTypes, p::Real=2) = (cc = channels(c); norm(cc, p)/(p == 0 ? length(
 
 
 # Scalar RGB
-function (/)(c::AbstractRGB{T}, f::Real) where T<:Normed
-    fs = (one(f)/reinterpret(oneunit(T)))/f
-    rettype(/, c, f)(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
-end
-function (/)(c::AbstractRGB{T}, f::Integer) where T<:Normed
-    fs = (1/reinterpret(oneunit(T)))/f
-    rettype(/, c, f)(fs*reinterpret(red(c)), fs*reinterpret(green(c)), fs*reinterpret(blue(c)))
+function (/)(c::C, f::AbstractFloat) where {C<:Union{AbstractRGB, TransparentRGB}}
+    r = oneunit(divtype(eltype(c), typeof(f))) / f
+    _mapc(rettype(/, c, f), v -> v * r, c)
 end
 (+)(a::AbstractRGB, b::AbstractRGB) = rettype(+, a, b)(red(a)+red(b), green(a)+green(b), blue(a)+blue(b))
 (-)(a::AbstractRGB, b::AbstractRGB) = rettype(-, a, b)(red(a)-red(b), green(a)-green(b), blue(a)-blue(b))
@@ -279,7 +289,7 @@ end
 middle(c::AbstractGray) = arith_colorant_type(c)(middle(gray(c)))
 middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(x), gray(y)))
 
-(/)(n::Number, c::AbstractGray) = base_color_type(c)(n/gray(c))
+(/)(n::Number, c::AbstractGray) = base_color_type(c)(_div(real(n), gray(c)))
 (+)(a::AbstractGray,    b::AbstractGray)    = rettype(+, a, b)(gray(a)+gray(b))
 (+)(a::TransparentGray, b::TransparentGray) = rettype(+, a, b)(gray(a)+gray(b), alpha(a)+alpha(b))
 (-)(a::AbstractGray,    b::AbstractGray)    = rettype(-, a, b)(gray(a)-gray(b))
@@ -287,8 +297,7 @@ middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(
 (*)(a::AbstractGray, b::AbstractGray) = a ⊙ b
 (^)(a::AbstractGray, b::Integer) = rettype(^, a, b)(gray(a)^convert(Int,b))
 (^)(a::AbstractGray, b::Real)    = rettype(^, a, b)(gray(a)^b)
-(/)(a::C, b::C) where C<:AbstractGray = base_color_type(C)(gray(a)/gray(b))
-(/)(a::AbstractGray, b::AbstractGray) = /(promote(a, b)...)
+(/)(a::AbstractGray, b::AbstractGray) = rettype(/, a, b)(_div(gray(a), gray(b)))
 (+)(a::AbstractGray, b::Number) = base_color_type(a)(gray(a)+b)
 (+)(a::Number, b::AbstractGray) = b+a
 (-)(a::AbstractGray, b::Number) = base_color_type(a)(gray(a)-b)

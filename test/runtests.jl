@@ -129,6 +129,10 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test @inferred(cf/2.0f0) === Gray{Float32}(0.05)
         @test @inferred(cu/2) === Gray(cu.val/2)
         @test @inferred(cu/0.5f0) === Gray(cu.val/0.5f0)
+        @test @inferred(cu/0.1N0f8) === Gray{N0f8}(1) # issue #154
+        @test_colortype_approx_eq @inferred(cf/0.6N0f8) Gray{Float32}(1/6) # issue #154
+        @test @inferred(Gray{Q0f7}(0.25) / 0.5Q0f7) === Gray{Q0f7}(0.5) # issue #154
+        @test @inferred(1+0im / Gray(1)) === @inferred(1 / Gray(1)) === Gray{Float32}(1)
         @test @inferred(cf+cf) === ccmp
         @test isfinite(cf)
         @test isfinite(Gray(true))
@@ -300,6 +304,12 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test_colortype_approx_eq ([p1]/2)[1] GrayA{Float32}(Gray(0.4),0.1)
         @test_colortype_approx_eq (0.4f0*[p1]+0.6f0*[p2])[1] GrayA{Float32}(Gray(0.68),0.26)
 
+        cf = AGray{Float32}(0.8, 0.2)
+        cu = AGray{N0f8}(0.8, 0.2)
+        @test @inferred(cu / 0.8N0f8) === AGray{N0f8}(1, 0.25) # issue #154
+        @test_colortype_approx_eq @inferred(cf / 0.8N0f8) AGray{Float32}(1, 0.25) # issue #154
+        @test @inferred(AGray{Q0f7}(0.25, 0.125) / 0.5Q0f7) === AGray{Q0f7}(0.5, 0.25) # issue #154
+
         a = GrayA{N0f8}[GrayA(0.8,0.7), GrayA(0.5,0.2)]
         @test sum(a) == GrayA(n8sum(0.8,0.5), n8sum(0.7,0.2))
         @test isapprox(a, a)
@@ -328,7 +338,6 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test @inferred(GrayA32(1, 0.4) - GrayA32(0.2, 0.2)) === GrayA32(0.8, 0.2)
 
         # Multiplication
-        cf = AGray{Float32}(0.8, 0.2)
         @test_throws MethodError cf * cf
         @test_throws MethodError cf ⋅ cf
         @test_throws MethodError cf ⊗ cf
@@ -357,6 +366,10 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test cf/2.0f0 == RGB{Float32}(0.05,0.1,0.15)
         @test cu/2 ≈ RGB(cu.r/2,cu.g/2,cu.b/2)
         @test cu/0.5f0 ≈ RGB(cu.r/0.5f0, cu.g/0.5f0, cu.b/0.5f0)
+        @test @inferred(cu/0.4N0f8) === RGB{N0f8}(26/102, 51/102, 76/102)
+        @test_colortype_approx_eq @inferred(cf / 0.4N0f8) RGB{Float32}(0.25, 0.5, 0.75)
+        cq0f7 = RGB{Q0f7}(0.125, 0.25, 0.375)
+        @test @inferred(cq0f7 / 0.5Q0f7) === RGB{Q0f7}(0.25, 0.5, 0.75) # issue #154
         @test cf+cf == ccmp
         @test cu * 1//2 == mapc(x->Float64(Rational(x)/2), cu)
         @test_colortype_approx_eq (cf.*[0.8f0])[1] RGB{Float32}(0.8*0.1,0.8*0.2,0.8*0.3)
@@ -472,6 +485,10 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test cf/2.0f0 == RGBA{Float32}(0.05,0.1,0.15,0.2)
         @test cu/2 == RGBA(cu.r/2,cu.g/2,cu.b/2,cu.alpha/2)
         @test cu/0.5f0 == RGBA(cu.r/0.5f0, cu.g/0.5f0, cu.b/0.5f0, cu.alpha/0.5f0)
+        @test @inferred(cu/0.4N0f8) === RGBA{N0f8}(26/102, 51/102, 76/102, 102/102)
+        @test_colortype_approx_eq @inferred(cf / 0.4N0f8) RGBA{Float32}(0.25, 0.5, 0.75, 1)
+        cq0f7 = RGBA{Q0f7}(0.125, 0.25, 0.375, 0.4375)
+        @test @inferred(cq0f7 / 0.5Q0f7) === RGBA{Q0f7}(0.25, 0.5, 0.75, 0.875) # issue #154
         @test cf+cf == ccmp
         @test_colortype_approx_eq (cf.*[0.8f0])[1] RGBA{Float32}(0.8*0.1,0.8*0.2,0.8*0.3,0.8*0.4)
         @test_colortype_approx_eq ([0.8f0].*cf)[1] RGBA{Float32}(0.8*0.1,0.8*0.2,0.8*0.3,0.8*0.4)

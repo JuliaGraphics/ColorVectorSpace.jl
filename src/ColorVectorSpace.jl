@@ -185,6 +185,7 @@ _div(x::AbstractFloat, y::Integer) = _mul(x, oneunit(x) / y)
 _div(x::T, y::T) where {T} = x / y
 _div(x::Bool, y::Bool) = (T = divtype(typeof(x), typeof(y)); _div(T(x), T(y)))
 _div(x::FixedPoint, y::Bool) = (T = divtype(typeof(x), typeof(y)); T(_div(T(x), T(y)))) # FIXME
+_div(x::Bool, y::FixedPoint) = (T = divtype(typeof(x), typeof(y)); T(_div(T(x), T(y)))) # FIXME
 _div(x, y) = (T = divtype(typeof(x), typeof(y)); _div(T(x), T(y)))
 
 @inline _mapc(::Type{C}, f, c) where {C<:MathTypes} = C(f.(channels(c))...)

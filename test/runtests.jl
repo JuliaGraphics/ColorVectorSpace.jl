@@ -671,8 +671,12 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
             @test_broken @inferred(x / cb) === Gray{Float32}(0.6)
             @test @inferred(cb / oneunit(x)) === Gray{N0f8}(1) # v0.9 behavior
             @test @inferred(x / cb) === Gray{N0f8}(0.6) # v0.9 behavior
+            if x isa Gray
+                @test_broken @inferred(true / x) === Gray{Float32}(1 / 0.6)
+                @test @inferred(true / Gray(1)) === Gray{N0f8}(1.0) # v0.9 behavior
+                @test @inferred(x^true) === Gray{N0f8}(0.6)
+            end
         end
-        @test @inferred(Gray(0.6N0f8)^true) === Gray{N0f8}(0.6)
 
         @testset "vs. $(typeof(c)) multiplications" for c in (Gray(true), Gray(0.5f0), Gray(0.6N0f8))
             @test @inferred(cb ⋅ c) === @inferred(c ⋅ cb) === gray(c)

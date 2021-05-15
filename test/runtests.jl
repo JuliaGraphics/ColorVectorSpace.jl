@@ -607,13 +607,103 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test cf ⋅ cf   === (Float64(red(cf))^2 + Float64(green(cf))^2 + Float64(blue(cf))^2)/3
     end
 
-    @testset "arithmetic with Bool" begin
+    @testset "arithmetic with Bool" begin # issue 148
         cb = Gray{Bool}(1)
         @test @inferred(+cb) === cb
         @test @inferred(-cb) === cb # wrapped around
-        @test_broken @inferred(one(cb) * cb) === cb
+        @test @inferred(one(cb) * cb) === cb
         @test oneunit(cb) === Gray(true)
-        # TODO: add more tests (cf. issue #148)
+
+        @testset "vs. Bool" begin
+            @test_broken @inferred(cb + true) === @inferred(true + cb) === Gray{Float32}(2)
+            @test_broken @inferred(cb - true) === Gray{Float32}(0)
+            @test_broken @inferred(true - cb) === Gray{Float32}(0)
+            @test @inferred(cb + false) === @inferred(false + cb) === Gray{N0f8}(1) # v0.9 behavior
+            @test @inferred(cb - true) === Gray{N0f8}(0) # v0.9 behavior
+            @test @inferred(true - cb) === Gray{N0f8}(0) # v0.9 behavior
+            @test @inferred(cb * true) === @inferred(true * cb) === Gray{Bool}(1)
+            @test @inferred(cb / true) === Gray{Float32}(1)
+            @test @inferred(cb / false) === Gray{Float32}(Inf32)
+            @test @inferred(true / cb) === Gray{Float32}(1)
+            @test @inferred(cb^true) === cb
+        end
+        @testset "vs. Gray{Bool}" begin
+            @test @inferred(cb + Gray(true)) === @inferred(Gray(true) + cb) === Gray{Bool}(0) # wrapped around
+            @test @inferred(cb - Gray(true)) === Gray{Bool}(0)
+            @test @inferred(Gray(false) - cb) === Gray{Bool}(1) # wrapped around
+            @test @inferred(cb * Gray(true)) === @inferred(Gray(true) * cb) === Gray{Bool}(1)
+            @test @inferred(cb / Gray(true)) === Gray{Float32}(1)
+            @test @inferred(cb / Gray(false)) === Gray{Float32}(Inf32)
+        end
+        @testset "vs. Int" begin
+            @test_broken @inferred(cb + 2) === @inferred(2 + cb) === Gray{Float32}(3)
+            @test_broken @inferred(cb - 2) === Gray{Float32}(-1)
+            @test_broken @inferred(2 - cb) === Gray{Float32}(1)
+            @test @inferred(cb + 0) === @inferred(0 + cb) === Gray{N0f8}(1) # v0.9 behavior
+            @test @inferred(cb - 1) === Gray{N0f8}(0) # v0.9 behavior
+            @test @inferred(2 - cb) === Gray{N0f8}(1) # v0.9 behavior
+            @test @inferred(cb * 2) === @inferred(2 * cb) === Gray{Float32}(2)
+            @test @inferred(cb / 2) === Gray{Float32}(0.5)
+            @test @inferred(2 / cb) === Gray{Float32}(2)
+            @test @inferred(cb^1) === cb
+        end
+        # vs. Float32 and Gray{Float32}
+        @testset "vs. $(typeof(x))" for x in (0.5f0, Gray(0.5f0))
+            @test @inferred(cb + x) === @inferred(x + cb) === Gray{Float32}(1.5)
+            @test @inferred(cb - x) === Gray{Float32}(0.5)
+            @test @inferred(x - cb) === Gray{Float32}(-0.5)
+            @test @inferred(cb * x) === @inferred(x * cb) === Gray{Float32}(0.5)
+            @test @inferred(cb / x) === Gray{Float32}(2)
+            @test @inferred(x / cb) === Gray{Float32}(0.5)
+            if x isa Real
+                @test @inferred(cb^x) === Gray{Float32}(1)
+            else
+                @test @inferred(x^true) === Gray{Float32}(0.5)
+            end
+        end
+        # vs. N0f8 and Gray{N0f8}
+        @testset "vs. $(typeof(x))" for x in (0.6N0f8, Gray(0.6N0f8))
+            @test @inferred(cb + x) === @inferred(x + cb) === Gray{N0f8}(1N0f8 + 0.6N0f8)
+            @test @inferred(cb - x) === Gray{N0f8}(1N0f8 - 0.6N0f8)
+            @test @inferred(x - cb) === Gray{N0f8}(0.6N0f8 - 1N0f8)
+            @test @inferred(cb * x) === @inferred(x * cb) === Gray{N0f8}(0.6)
+            @test_broken @inferred(cb / x) === Gray{Float32}(1 / 0.6)
+            @test_broken @inferred(x / cb) === Gray{Float32}(0.6)
+            @test @inferred(cb / oneunit(x)) === Gray{N0f8}(1) # v0.9 behavior
+            @test @inferred(x / cb) === Gray{N0f8}(0.6) # v0.9 behavior
+            if x isa Gray
+                @test_broken @inferred(true / x) === Gray{Float32}(1 / 0.6)
+                @test @inferred(true / Gray(1)) === Gray{N0f8}(1.0) # v0.9 behavior
+                @test @inferred(x^true) === Gray{N0f8}(0.6)
+            end
+        end
+
+        @testset "vs. $(typeof(c)) multiplications" for c in (Gray(true), Gray(0.5f0), Gray(0.6N0f8))
+            @test @inferred(cb ⋅ c) === @inferred(c ⋅ cb) === gray(c)
+            @test @inferred(cb ⊙ c) === @inferred(c ⊙ cb) === c
+            @test @inferred(cb ⊗ c) === @inferred(c ⊗ cb) === c
+        end
+        cf = RGB{Float32}(0.1, 0.2, 0.3)
+        @test @inferred(cf + cb) === @inferred(cb + cf) === RGB{Float32}(1.1, 1.2, 1.3)
+        @test @inferred(cf - cb) === RGB{Float32}(-0.9, -0.8, -0.7)
+        @test @inferred(cb - cf) === RGB{Float32}(0.9, 0.8, 0.7)
+        cu = RGB{N0f8}(0.1, 0.2, 0.3)
+        @test @inferred(cu + cb) === @inferred(cb + cu) === mapc(v -> v + 1N0f8, cu) # wrapped around
+        @test @inferred(cu - cb) === mapc(v -> v - 1N0f8, cu) # wrapped around
+        @test @inferred(cb - cu) === mapc(v -> 1N0f8 - v, cu)
+        @testset "vs. $(typeof(c))" for c in (cf, cu)
+            @test @inferred(c * true) === @inferred(true * c) === c
+            if c === cu
+                @test_broken @inferred(c / true) === c / 1
+                @test @inferred(c / true) == c # v0.9 behavior
+            else
+                @test @inferred(c / true) === c / 1
+            end
+            @test @inferred(cb ⋅ c) === @inferred(c ⋅ cb) === Gray(1) ⋅ c
+            @test @inferred(cb ⊙ c) === @inferred(c ⊙ cb) === c
+            @test @inferred(cb ⊗ c) === Gray(1) ⊗ c
+            @test @inferred(c ⊗ cb) === c ⊗ Gray(1)
+        end
     end
 
     @testset "Complement" begin

@@ -38,11 +38,12 @@ represents the "RGB vector space" version.
 
 This package also defines `norm(c)` for RGB and grayscale colors.
 This makes these color spaces [normed vector spaces](https://en.wikipedia.org/wiki/Normed_vector_space).
-Note that `norm` has been designed to satisfy equivalence of grayscale and RGB representations: if
+Note that `norm` has been designed to satisfy **equivalence** of grayscale and RGB representations: if
 `x` is a scalar, then `norm(x) == norm(Gray(x)) == norm(RGB(x, x, x))`.
 Effectively, there's a division-by-3 in the `norm(::RGB)` case compared to the Euclidean interpretation of
 the RGB vector space.
 Equivalence is an important principle for the Colors ecosystem, and violations should be reported as likely bugs.
+One violation is `abs2`; see the section below for more detail.
 
 ## Usage
 
@@ -117,15 +118,33 @@ The corresponding `stdmult` computes standard deviation.
 
 To begin with, there is no general and straightforward definition of the
 absolute value of a vector.
-There are roughly two possible definitions of `abs`/`abs2`: as a channel-wise
+There are two reasonably intuitive definitions of `abs`/`abs2`: as a channel-wise
 operator or as a function which returns a real number based on the norm.
 For the latter, there are also variations in the definition of norm.
 
-In ColorVectorSpace v0.9 and later, `abs` is defined as a channel-wise operator
-and `abs2` is undefined.
-The following are alternatives for the definitions in ColorVectorSpace v0.8 and
-earlier.
-```julia
-_abs(c)  = mapreducec(v->abs(float(v)), +, 0, c)
-_abs2(c) = mapreducec(v->float(v)^2, +, 0, c)
-```
+In ColorVectorSpace v0.9 and later, `abs` is defined as a channel-wise operator.
+`abs2` returns a real-valued scalar. In previous versions of ColorVectorSpace,
+for `g = Gray(0.3)`, ColorVectorSpace returned different values for `abs2(g)` and
+`abs2(RGB(g))`. This breaks the equivalence of `g` and `RGB(g)`.
+This behavior is retained, with a deprecation warning, starting with
+ColorVectorSpace 0.9.6.
+
+**In the future**, `abs2` will be defined as `abs2(c) == c⋅c ≈ norm(c)^2`.
+This effectively divides the old result by 3; code that imposes thresholds
+on `abs2(c)` may need to be updated.
+You can obtain that behavior now--and circumvent the deprecation warning--
+by using `ColorVectorSpace.Future.abs2(c)`.
+
+We anticipate the following transition schedule:
+
+- Sept 20, 2021: release ColorVectorSpace 0.9.6 with both `abs2` and `Future.abs2`.
+  `abs2` will have a "quiet" deprecation warning (visible with `--depwarn=yes`
+  or when running `Pkg.test`)
+- Jan 1, 2022: make the deprecation warning "noisy" (cannot be turned off).
+  This is designed to catch user-level scripts that may need to update thresholds
+  or other constants.
+- *Apr 1, 2022: transition `abs2` to the new definition
+  and make `Future.abs2` give a "noisy" depwarn to revert to regular `abs2`.
+- *July 1, 2022: remove `Future.abs2`.
+
+The two marked with `*` denote breaking releases.

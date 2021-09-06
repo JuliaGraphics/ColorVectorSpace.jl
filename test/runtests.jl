@@ -766,14 +766,23 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test varmult(⋅, cs; mean=RGB(0, 0, 0)) ≈ (0.2^2+0.3^2+0.4^2 + 0.5^2+0.3^2+0.2^2)/3
         @test varmult(⊙, cs) ≈ 2*RGB(0.15^2, 0, 0.1^2)
         @test Matrix(varmult(⊗, cs)) ≈ 2*[0.15^2 0 -0.1*0.15; 0 0 0; -0.1*0.15 0 0.1^2]
+        @test stdmult(⋅, cs) ≈ sqrt(2*(0.15^2 + 0.1^2)/3)    # the /3 is for the 3 color channels, i.e., equivalence
+        @test stdmult(⋅, cs; corrected=false) ≈ sqrt((0.15^2 + 0.1^2)/3)
+        @test stdmult(⋅, cs; mean=RGB(0, 0, 0)) ≈ sqrt((0.2^2+0.3^2+0.4^2 + 0.5^2+0.3^2+0.2^2)/3)
+        @test stdmult(⊙, cs) ≈ RGB(sqrt(2*0.15^2), 0, sqrt(2*0.1^2))
+        @test_throws DomainError stdmult(⊗, cs)
 
         cs = [RGB(0.1, 0.2,  0.3)  RGB(0.3, 0.5, 0.3);
               RGB(0.2, 0.21, 0.33) RGB(0.4, 0.51, 0.33);
               RGB(0.3, 0.22, 0.36) RGB(0.5, 0.52, 0.36)]
         v1 = RGB(0.1^2, 0.15^2, 0)
+        s2v1 = mapc(sqrt, 2*v1)
         @test varmult(⊙, cs, dims=2) ≈ 2*[v1, v1, v1]
+        @test stdmult(⊙, cs, dims=2) ≈ [s2v1, s2v1, s2v1]
         v2 = RGB(0.1^2, 0.01^2, 0.03^2)
+        sv2 = mapc(sqrt, v2)
         @test varmult(⊙, cs, dims=1) ≈ [v2 v2]
+        @test stdmult(⊙, cs, dims=1) ≈ [sv2 sv2]
     end
 
     @testset "copy" begin

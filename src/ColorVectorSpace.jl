@@ -29,7 +29,7 @@ import Statistics: middle # and `_mean_promote`
 
 export RGBRGB, complement, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm, varmult
 
-MathTypes{T,C} = Union{AbstractRGB{T},TransparentRGB{C,T},AbstractGray{T},TransparentGray{C,T}}
+MathTypes{T,C<:Union{AbstractGray{T},AbstractRGB{T}}} = Union{C,TransparentColor{C,T}}
 
 ## Version compatibility with ColorTypes
 ### TODO: Remove the definitons other than `one` when dropping ColorTypes v0.10 support

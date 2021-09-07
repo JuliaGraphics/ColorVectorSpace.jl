@@ -56,6 +56,27 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test isempty(detect_ambiguities(ColorVectorSpace))
     end
 
+    @testset "MathTypes" begin
+        @test Gray{Float32} <: ColorVectorSpace.MathTypes{Float32} <: ColorVectorSpace.MathTypes
+        @test AGray{Float32} <: ColorVectorSpace.MathTypes{Float32}
+        @test GrayA{Float32} <: ColorVectorSpace.MathTypes{Float32}
+        @test RGB{Float32} <: ColorVectorSpace.MathTypes{Float32}
+        @test RGBA{Float32} <: ColorVectorSpace.MathTypes{Float32}
+        @test ARGB{Float32} <: ColorVectorSpace.MathTypes{Float32}
+        @test !(HSV{Float32} <: ColorVectorSpace.MathTypes)
+        @test !(HSVA{Float32} <: ColorVectorSpace.MathTypes)
+        @test !(AHSV{Float32} <: ColorVectorSpace.MathTypes)
+        @test !(HSV <: ColorVectorSpace.MathTypes)
+        @test !(HSVA <: ColorVectorSpace.MathTypes)
+        @test !(AHSV <: ColorVectorSpace.MathTypes)
+        @test AbstractGray <: ColorVectorSpace.MathTypes
+        @test AbstractRGB <: ColorVectorSpace.MathTypes
+        @test AbstractGray{Float32} <: ColorVectorSpace.MathTypes{Float32}
+        @test AbstractRGB{Float32} <: ColorVectorSpace.MathTypes{Float32}
+        @test_broken TransparentGray <: ColorVectorSpace.MathTypes
+        @test_broken TransparentRGB <: ColorVectorSpace.MathTypes
+    end
+
     @testset "convert" begin
         for x in (0.5, 0.5f0, NaN, NaN32, N0f8(0.5))
             @test @inferred(convert(Gray{typeof(x)}, x))  === @inferred(convert(Gray, x))  === Gray(x)

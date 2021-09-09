@@ -27,7 +27,7 @@ import SpecialFunctions: gamma, logabsgamma, lfact
 using Statistics
 import Statistics: middle # and `_mean_promote`
 
-export RGBRGB, complement, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm, varmult
+export RGBRGB, complement, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm, varmult, stdmult
 
 MathTypes{T,C<:Union{AbstractGray{T},AbstractRGB{T}}} = Union{C,TransparentColor{C,T}}
 
@@ -463,6 +463,14 @@ function varmult(op, itr; corrected::Bool=true, dims=:, mean=Statistics.mean(itr
         n = length(itr) // length(v)
     end
     return v / (corrected ? max(1, n-1) : max(1, n))
+end
+function stdmult(op, itr; kwargs...)
+    _sqrt(x::Real)        = sqrt(x)
+    _sqrt(c::Colorant)    = mapc(sqrt, c)
+    _sqrt(rgbrgb::RGBRGB) = RGBRGB(sqrt.(Matrix(rgbrgb)))
+
+    result = varmult(op, itr; kwargs...)
+    return isa(result, Union{Real,Colorant,RGBRGB}) ? _sqrt(result) : _sqrt.(result)
 end
 
 function __init__()

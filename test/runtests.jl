@@ -81,15 +81,15 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         for x in (0.5, 0.5f0, NaN, NaN32, N0f8(0.5))
             @test @inferred(convert(Gray{typeof(x)}, x))  === @inferred(convert(Gray, x))  === Gray(x)
             @test @inferred(convert(RGB{typeof(x)}, x))   === @inferred(convert(RGB, x))   === RGB(x, x, x)
-            # These should be fixed by a future release of ColorTypes
-            @test_broken @inferred(convert(AGray{typeof(x)}, x)) === @inferred(convert(AGray, x)) === AGray(x, 1)
-            @test_broken @inferred(convert(ARGB{typeof(x)}, x))  === @inferred(convert(ARGB, x))  === ARGB(x, x, x, 1)
-            @test_broken @inferred(convert(GrayA{typeof(x)}, x)) === @inferred(convert(GrayA, x)) === GrayA(x, 1)
-            @test_broken @inferred(convert(RGBA{typeof(x)}, x))  === @inferred(convert(RGBA, x))  === RGBA(x, x, x, 1)
+            @test @inferred(convert(AGray{typeof(x)}, x)) === @inferred(convert(AGray, x)) === AGray(x, 1)
+            @test @inferred(convert(ARGB{typeof(x)}, x))  === @inferred(convert(ARGB, x))  === ARGB(x, x, x, 1)
+            @test @inferred(convert(GrayA{typeof(x)}, x)) === @inferred(convert(GrayA, x)) === GrayA(x, 1)
+            @test @inferred(convert(RGBA{typeof(x)}, x))  === @inferred(convert(RGBA, x))  === RGBA(x, x, x, 1)
         end
     end
 
     @testset "nan" begin
+        # `nan` for `Colorant` is defined in ColorTypes. It should be exported by ColorVectorSpace
         function make_checked_nan(::Type{T}) where T
             x = nan(T)
             isa(x, T) && mapreducec(isnan, &, true, x)
@@ -103,10 +103,6 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
             @test make_checked_nan(ARGB{S})
             @test make_checked_nan(RGBA{S})
         end
-    end
-
-    @testset "traits" begin
-        @test floattype(Gray{N0f8}) === Gray{float(N0f8)}
     end
 
     @testset "_mul" begin

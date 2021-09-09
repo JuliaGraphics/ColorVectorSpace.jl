@@ -40,13 +40,16 @@ jobs:
         env:
           cache-name: cache-artifacts
         with:
-          path: ~/.julia/artifacts 
+          path: ~/.julia/artifacts
           key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
           restore-keys: |
             ${{ runner.os }}-test-${{ env.cache-name }}-
             ${{ runner.os }}-test-
             ${{ runner.os }}-
-
+      - name: "add ColorTypes#master"
+        shell: bash
+        run: |
+          julia --project=. -e 'using Pkg; Pkg.add(PackageSpec(name="ColorTypes", rev="master")); Pkg.instantiate()'
       - name: "Unit Test"
         uses: julia-actions/julia-runtest@master
 

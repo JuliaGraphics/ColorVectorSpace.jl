@@ -1,16 +1,16 @@
 module ColorVectorSpace
 
 using ColorTypes, FixedPointNumbers, SpecialFunctions
+using ColorTypes: nan
 using TensorCore
 import TensorCore: ⊙, ⊗
 
 using FixedPointNumbers: ShorterThanInt
 
-import Base: ==, +, -, *, /, ^, <, ~
-import Base: abs, clamp, convert, copy, div, eps, float,
-    isfinite, isinf, isnan, isless, length, mapreduce, oneunit,
-    promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
-    mod, mod1, rem, atan, hypot, max, min, real, typemin, typemax
+import Base: +, -, *, /, ^, ~
+import Base: abs, clamp, copy, div, eps, float,
+    promote_rule, zero, trunc, floor, round, ceil, bswap,
+    mod, mod1, rem, atan, hypot, max, min, typemin, typemax
 # More unaryOps (mostly math functions)
 import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   asin, acos, atan, asinh, acosh, atanh,
@@ -30,50 +30,6 @@ import Statistics: middle # and `_mean_promote`
 export RGBRGB, complement, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm, varmult
 
 MathTypes{T,C<:Union{AbstractGray{T},AbstractRGB{T}}} = Union{C,TransparentColor{C,T}}
-
-## Version compatibility with ColorTypes
-### TODO: Remove the definitons other than `one` when dropping ColorTypes v0.10 support
-
-if !hasmethod(zero, (Type{TransparentGray},))
-    zero(::Type{C}) where {C<:TransparentGray} = C(0,0)
-    zero(::Type{C}) where {C<:AbstractRGB}     = C(0,0,0)
-    zero(::Type{C}) where {C<:TransparentRGB}  = C(0,0,0,0)
-    zero(p::Colorant) = zero(typeof(p))
-end
-
-if !hasmethod(one, (Type{TransparentGray},)) # specification change is planned for ColorTypes v0.12
-    Base.one(::Type{C}) where {C<:TransparentGray} = C(1,1)
-    Base.one(::Type{C}) where {C<:AbstractRGB}     = C(1,1,1)
-    Base.one(::Type{C}) where {C<:TransparentRGB}  = C(1,1,1,1)
-    Base.one(p::Colorant) = one(typeof(p))
-end
-
-if !hasmethod(isfinite, (Colorant,))
-    isfinite(c::Colorant) = mapreducec(isfinite, &, true, c)
-    isinf(c::Colorant) = mapreducec(isinf, |, false, c)
-    isnan(c::Colorant) = mapreducec(isnan, |, false, c)
-end
-
-if which(<, Tuple{AbstractGray,AbstractGray}).module === Base
-    (<)(g1::AbstractGray, g2::AbstractGray) = gray(g1) < gray(g2)
-    (<)(c::AbstractGray, r::Real) = gray(c) < r
-    (<)(r::Real, c::AbstractGray) = r < gray(c)
-end
-if !hasmethod(isless, Tuple{AbstractGray,Real})
-    isless(c::AbstractGray, r::Real) = isless(gray(c), r)
-    isless(r::Real, c::AbstractGray) = isless(r, gray(c))
-end
-
-if isdefined(ColorTypes, :nan)
-    using ColorTypes: nan
-else
-    nan(::Type{T}) where {T<:AbstractFloat} = convert(T, NaN)
-    nan(::Type{C}) where {T<:AbstractFloat, C<:MathTypes{T}} = mapc(_ -> nan(T), zero(C))
-end
-
-if which(real, (Type{<:AbstractGray},)).module === Base
-    real(::Type{C}) where {C<:AbstractGray} = real(eltype(C))
-end
 
 # To help type inference
 promote_rule(::Type{T}, ::Type{C}) where {T<:Real,C<:AbstractGray} = promote_type(T, eltype(C))
@@ -243,8 +199,8 @@ copy(c::MathTypes) = c
 abs(c::MathTypes) = mapc(abs, c)
 norm(c::MathTypes, p::Real=2) = (cc = channels(c); norm(cc, p)/(p == 0 ? length(cc) : length(cc)^(1/p)))
 (⊙)(a::C, b::C) where {C<:MathTypes} = _mapc(rettype(*, a, b), _mul, a, b)
-(⋅)(a::C, b::C) where {C<:MathTypes} = throw(MethodError(dot, (a, b)))
-(⊗)(a::C, b::C) where {C<:MathTypes} = throw(MethodError(tensor, (a, b)))
+(⋅)(a::C, b::C) where {C<:Union{TransparentGray, TransparentRGB}} = throw(MethodError(dot, (a, b)))
+(⊗)(a::C, b::C) where {C<:Union{TransparentGray, TransparentRGB}} = throw(MethodError(tensor, (a, b)))
 
 ## Mixed types
 (+)(a::MathTypes, b::MathTypes) = (+)(promote(a, b)...)

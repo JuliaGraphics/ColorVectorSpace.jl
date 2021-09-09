@@ -111,6 +111,8 @@ RGBRGB{Float64}:
  -0.03   0.0   0.02
 ```
 
+The corresponding `stdmult` computes standard deviation.
+
 ### `abs` and `abs2`
 
 To begin with, there is no general and straightforward definition of the

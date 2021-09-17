@@ -212,7 +212,13 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test sum(a[1:1]) == a[1]
         @test abs( varmult(*, a) - (a[1]-a[2])^2 / 2 ) <= 0.001
         ab = Gray[true, true]
-        @test sum(ab) == Gray(n8sum(true, true))
+        @test sum(ab) === Gray(n8sum(true, true))
+        @test prod(ab) === Gray(true)
+        ab = Gray[true]
+        @test sum(ab) === Gray(n8sum(true, false))
+        @test prod(ab) === Gray(true)
+        @test sum(Gray{Bool}[]) === Gray(n8sum(false, false))
+        @test prod(Gray{Bool}[]) === one(Gray{Bool})
 
         @test real(Gray{Float32}) <: Real
         @test zero(ColorTypes.Gray) == 0
@@ -429,10 +435,14 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         a = RGB{N0f8}[RGB(1,0,0), RGB(1,0.8,0)]
         @test sum(a) == RGB(2.0,0.8,0)
         @test sum(typeof(a)()) == RGB(0.0,0.0,0)
+        ab = [RGB(true, false, true), RGB(true, false, false)]
+        @test sum(ab) === RGB(n8sum(true, true), n8sum(false, false), n8sum(true, false))
+        ab = [RGB(true, false, true)]
+        @test sum(ab) === RGB(n8sum(true, false), n8sum(false, false), n8sum(true, false))
+
         @test isapprox(a, a)
         a = RGB{Float64}(1.0, 1.0, 0.9999999999999999)
         b = RGB{Float64}(1.0, 1.0, 1.0)
-
         @test isapprox(a, b)
         a = RGB{Float64}(1.0, 1.0, 0.99)
         @test !(isapprox(a, b, rtol = 0.01))

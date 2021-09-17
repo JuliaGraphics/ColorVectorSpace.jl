@@ -211,6 +211,8 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test sum(a) == Gray(n8sum(0.8,0.7))
         @test sum(a[1:1]) == a[1]
         @test abs( varmult(*, a) - (a[1]-a[2])^2 / 2 ) <= 0.001
+        ab = Gray[true, true]
+        @test sum(ab) == Gray(n8sum(true, true))
 
         @test real(Gray{Float32}) <: Real
         @test zero(ColorTypes.Gray) == 0

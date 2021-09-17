@@ -193,6 +193,7 @@ _div(x, y) = (T = divtype(typeof(x), typeof(y)); _div(T(x), T(y)))
 
 ## Generic algorithms
 Base.add_sum(c1::MathTypes,c2::MathTypes) = mapc(Base.add_sum, c1, c2)
+Base.add_sum(c1::AbstractGray{Bool}, c2::AbstractGray{Bool}) = Gray(FixedPointNumbers.Treduce(gray(c1)) + FixedPointNumbers.Treduce(gray(c2)))
 Base.reduce_first(::typeof(Base.add_sum), c::MathTypes) = mapc(x->Base.reduce_first(Base.add_sum, x), c)
 function Base.reduce_empty(::typeof(Base.add_sum), ::Type{T}) where {T<:MathTypes}
     z = Base.reduce_empty(Base.add_sum, eltype(T))

@@ -825,4 +825,11 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test copy(c) === c
     end
 
+    @testset "ranges" begin
+        T = Gray{N0f8}
+        @test length(zero(T):eps(T):oneunit(T)) == 256
+        @test length(zero(T):eps(N0f8):oneunit(T)) == 256
+        @test length(zero(N0f8):eps(T):oneunit(N0f8)) == 256
+    end
+
 end

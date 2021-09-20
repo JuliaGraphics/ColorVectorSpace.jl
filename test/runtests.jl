@@ -827,9 +827,20 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
 
     @testset "ranges" begin
         T = Gray{N0f8}
-        @test length(zero(T):eps(T):oneunit(T)) == 256
-        @test length(zero(T):eps(N0f8):oneunit(T)) == 256
-        @test length(zero(N0f8):eps(T):oneunit(N0f8)) == 256
+        for r in (zero(T):eps(T):oneunit(T),
+                  zero(T):eps(N0f8):oneunit(T),
+                  zero(N0f8):eps(T):oneunit(N0f8),
+                  StepRangeLen(zero(T), eps(T), 256),
+                  StepRangeLen(zero(T), eps(N0f8), 256),
+                  LinRange(zero(T), oneunit(T), 256))
+            @test length(r) == 256
+            @test step(r) == eps(T)
+        end
+
+        r = LinRange(RGB(1, 0, 0), RGB(0, 0, 1), 256)
+        @test length(r) == 256
+        @test step(r) == RGB(-1.0f0/255, 0, eps(N0f8))
+        @test r[2] == RGB(254.0f0/255, 0, 1.0f0/255)
     end
 
 end

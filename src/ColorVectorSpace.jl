@@ -216,6 +216,7 @@ end
 
 for f in (:mod, :rem, :mod1)
     @eval $f(x::Gray, m::Gray) = Gray($f(gray(x), gray(m)))
+    @eval $f(x::Gray, m::Real) = Gray($f(gray(x), m))
 end
 
 dotc(x::T, y::T) where {T<:Real} = acc(x)*acc(y)
@@ -476,6 +477,9 @@ function stdmult(op, itr; kwargs...)
     result = varmult(op, itr; kwargs...)
     return isa(result, Union{Real,Colorant,RGBRGB}) ? _sqrt(result) : _sqrt.(result)
 end
+
+Base.length(r::StepRange{<:AbstractGray,<:AbstractGray}) = length(StepRange(gray(r.start), gray(r.step), gray(r.stop)))
+Base.length(r::StepRange{<:AbstractGray})                = length(StepRange(gray(r.start), r.step,       gray(r.stop)))
 
 function __init__()
     if isdefined(Base, :Experimental) && isdefined(Base.Experimental, :register_error_hint)

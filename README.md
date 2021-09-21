@@ -137,7 +137,7 @@ by using `ColorVectorSpace.Future.abs2(c)`.
 
 We anticipate the following transition schedule:
 
-- Sept 20, 2021: release ColorVectorSpace 0.9.6 with both `abs2` and `Future.abs2`.
+- Sept 21, 2021: release ColorVectorSpace 0.9.7 with both `abs2` and `Future.abs2`.
   `abs2` will have a "quiet" deprecation warning (visible with `--depwarn=yes`
   or when running `Pkg.test`)
 - Jan 1, 2022: make the deprecation warning "noisy" (cannot be turned off).

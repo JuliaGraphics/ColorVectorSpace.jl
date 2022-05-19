@@ -140,11 +140,11 @@ We anticipate the following transition schedule:
 - Sept 21, 2021: release ColorVectorSpace 0.9.7 with both `abs2` and `Future.abs2`.
   `abs2` will have a "quiet" deprecation warning (visible with `--depwarn=yes`
   or when running `Pkg.test`)
-- Jan 1, 2022: make the deprecation warning "noisy" (cannot be turned off).
+- May 19, 2022: make the deprecation warning "noisy" (cannot be turned off).
   This is designed to catch user-level scripts that may need to update thresholds
   or other constants.
-- *Apr 1, 2022: transition `abs2` to the new definition
+- *July 1, 2022: transition `abs2` to the new definition
   and make `Future.abs2` give a "noisy" depwarn to revert to regular `abs2`.
-- *July 1, 2022: remove `Future.abs2`.
+- *Dec 1, 2022: remove `Future.abs2`.
 
 The two marked with `*` denote breaking releases.

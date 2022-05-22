@@ -31,6 +31,12 @@ export RGBRGB, complement, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm
 
 MathTypes{T,C<:Union{AbstractGray{T},AbstractRGB{T}}} = Union{C,TransparentColor{C,T}}
 
+if Base.VERSION >= v"1.5"
+    @inline _depwarn(msg, funcsym; force=false) = Base.depwarn(msg, funcsym; force=force)
+else
+    @inline _depwarn(msg, funcsym; force=false) = Base.depwarn(msg, funcsym)
+end
+
 ## Version compatibility with ColorTypes
 ### TODO: Remove the definitons other than `one` when dropping ColorTypes v0.10 support
 
@@ -487,7 +493,7 @@ Base.length(r::StepRange{<:AbstractGray})                = length(StepRange(gray
 
 Base.abs2(g::AbstractGray) = abs2(gray(g))
 function Base.abs2(c::AbstractRGB)
-    Base.depwarn("""
+    _depwarn("""
     The return value of `abs2` will change to ensure that `abs2(g::Gray) ≈ abs2(RGB(g::Gray))`.
     For `RGB` colors, this results in dividing the previous output by 3.
 

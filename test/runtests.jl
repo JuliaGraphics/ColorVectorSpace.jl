@@ -300,7 +300,13 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         for g in (Gray{N0f8}(0.4), Gray{N0f8}(0.6))
             for op in (:trunc, :floor, :round, :ceil)
                 v = @eval $op(Bool, gray($g))
-                @test @eval($op(Bool, $g)) === Gray(v)
+                @test @eval($op(Bool, $g)) === v
+            end
+        end
+        for g in (Gray(1.4), Gray(1.6))
+            for op in (:trunc, :floor, :round, :ceil)
+                v = @eval $op(Int, gray($g))
+                @test @eval($op(Int, $g)) === v
             end
         end
         for (g1, g2) in ((Gray(0.4), Gray(0.3)), (Gray(N0f8(0.4)), Gray(N0f8(0.3))))

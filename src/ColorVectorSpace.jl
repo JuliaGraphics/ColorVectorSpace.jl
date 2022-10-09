@@ -221,7 +221,7 @@ end
 eps(::Type{Gray{T}}) where {T} = Gray(eps(T))
 
 for f in (:trunc, :floor, :round, :ceil)
-    @eval $f(::Type{T}, g::Gray) where {T<:Integer} = Gray{T}($f(T, gray(g)))
+    @eval $f(::Type{T}, g::Gray) where {T<:Integer} = $f(T, gray(g))
 end
 
 for f in (:mod, :rem, :mod1)

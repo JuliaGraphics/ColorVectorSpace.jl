@@ -11,7 +11,7 @@ import Base: abs, clamp, convert, copy, div, eps, float,
     isfinite, isinf, isnan, isless, length, mapreduce, oneunit,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
     mod, mod1, rem, atan, hypot, max, min, real, typemin, typemax
-# More unaryOps (mostly math functions)
+# More unaryops (mostly math functions)
 import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   asin, acos, atan, asinh, acosh, atanh,
                   sec, csc, cot, asec, acsc, acot,
@@ -292,7 +292,7 @@ dotc(x::T, y::T) where {T<:AbstractRGB} = 0.200f0 * acc(red(x))*acc(red(y)) + 0.
 dotc(x::AbstractRGB, y::AbstractRGB) = dotc(promote(x, y)...)
 
 # Scalar Gray
-const UnaryOps = (:~, :conj, :abs,
+const unaryops = (:~, :conj, :abs,
                   :sin, :cos, :tan, :sinh, :cosh, :tanh,
                   :asin, :acos, :atan, :asinh, :acosh, :atanh,
                   :sec, :csc, :cot, :asec, :acsc, :acot,
@@ -303,7 +303,7 @@ const UnaryOps = (:~, :conj, :abs,
                   :log, :log2, :log10, :log1p, :exponent, :exp,
                   :exp2, :exp10, :expm1, :cbrt, :sqrt,
                   :significand, :frexp, :modf)
-for op in UnaryOps
+for op in unaryops
     @eval ($op)(c::AbstractGray) = Gray($op(gray(c)))
 end
 

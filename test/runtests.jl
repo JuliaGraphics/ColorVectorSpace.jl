@@ -288,9 +288,9 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
             for mod in (
                 ColorVectorSpace,
                 SFE,
-                (; UnaryOps = (:trunc, :floor, :round, :ceil, :eps, :bswap)),
+                (; unaryops = (:trunc, :floor, :round, :ceil, :eps, :bswap)),
             )
-                for op in mod.UnaryOps
+                for op in mod.unaryops
                     op ∈ (:frexp, :exponent, :modf, :logfactorial) && continue
                     op === :~ && eltype(g) === Float64 && continue
                     op === :significand && eltype(g) === N0f8 && continue

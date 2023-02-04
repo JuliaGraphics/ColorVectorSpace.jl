@@ -4,14 +4,14 @@ module SpecialFunctionsExt
 
     isdefined(Base, :get_extension) ? (import SpecialFunctions) : (import ..SpecialFunctions)
 
-    const UnaryOps = (
+    const unaryops = (
         :gamma, :logfactorial, :erf, :erfc, :erfcx, :erfi, :dawson,
         :airyai, :airyaiprime, :airybi, :airybiprime,
         :besselj0, :besselj1, :bessely0, :bessely1,
         :eta, :zeta, :digamma
     )
 
-    for op in UnaryOps
+    for op in unaryops
         @eval SpecialFunctions.$op(c::AbstractGray) = Gray(SpecialFunctions.$op(gray(c)))
     end
 

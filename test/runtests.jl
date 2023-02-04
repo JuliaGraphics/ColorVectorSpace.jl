@@ -137,7 +137,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test_throws MethodError cf ÷ cf
         @test cf + 0.1     === 0.1 + cf        === Gray(Float64(0.1f0) + 0.1)
         @test cf64 - 0.1f0 === -(0.1f0 - cf64) === Gray( 0.2 - Float64(0.1f0))
-        @test ColorVectorSpace.Future.abs2(ccmp) === ColorVectorSpace.Future.abs2(gray(ccmp))
+        @test abs2(ccmp) === abs2(gray(ccmp))
         @test norm(cf) == norm(cf, 2) == norm(gray(cf))
         @test norm(cf, 1)   == norm(gray(cf), 1)
         @test norm(cf, Inf) == norm(gray(cf), Inf)
@@ -429,9 +429,8 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test !isnan(RGB(1, Inf, 0.5))
         @test abs(RGB(0.1,0.2,0.3)) == RGB(0.1,0.2,0.3)
         cv = RGB(0.1,0.2,0.3)
-        @test ColorVectorSpace.Future.abs2(cv) == cv ⋅ cv
-        @test_logs (:warn, r"change to ensure") abs2(cv) > 2*ColorVectorSpace.Future.abs2(cv)
-        @test ColorVectorSpace.Future.abs2(cv) ≈ norm(cv)^2
+        @test abs2(cv) == cv ⋅ cv
+        @test abs2(cv) ≈ norm(cv)^2
         @test_throws MethodError sum(abs2, RGB(0.1,0.2,0.3))
         @test norm(RGB(0.1,0.2,0.3)) ≈ sqrt(0.14)/sqrt(3)
 
@@ -807,7 +806,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
             @test norm(x, p) == norm(g, p) ≈ norm(c, p)
         end
         @test dot(x, x) == dot(g, g) ≈ dot(c, c)
-        @test abs2(x) == abs2(g) ≈ ColorVectorSpace.Future.abs2(c)
+        @test abs2(x) ≈ abs2(g) ≈ abs2(c)
         @test_throws MethodError mapreduce(x->x^2, +, c)   # this risks breaking equivalence & noniterability
     end
 
@@ -835,10 +834,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         sv2 = mapc(sqrt, v2)
         @test varmult(⊙, cs, dims=1) ≈ [v2 v2]
         @test stdmult(⊙, cs, dims=1) ≈ [sv2 sv2]
-
-        # When ColorVectorSpace.Future.abs2 becomes the default, delete the `@test_logs`
-        # and change the `@test_broken` to `@test`
-        @test_logs (:warn, r"will change to ensure") match_mode=:any @test_broken var(cs) == varmult(⋅, cs)
+        @test var(cs) == varmult(⋅, cs)
     end
 
     @testset "copy" begin

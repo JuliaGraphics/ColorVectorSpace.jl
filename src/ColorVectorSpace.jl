@@ -479,37 +479,7 @@ end
 Base.length(r::StepRange{<:AbstractGray,<:AbstractGray}) = length(StepRange(gray(r.start), gray(r.step), gray(r.stop)))
 Base.length(r::StepRange{<:AbstractGray})                = length(StepRange(gray(r.start), r.step,       gray(r.stop)))
 
-Base.abs2(g::AbstractGray) = abs2(gray(g))
-function Base.abs2(c::AbstractRGB)
-    _depwarn("""
-    The return value of `abs2` will change to ensure that `abs2(g::Gray) ≈ abs2(RGB(g::Gray))`.
-    For `RGB` colors, this results in dividing the previous output by 3.
-
-    To avoid this warning, use `ColorVectorSpace.Future.abs2` instead of `abs2`; currently,
-    `abs2` returns the old value (for compatibility), and `ColorVectorSpace.Future.abs2` returns the new value.
-    When making this change, you may also need to adjust constants like color-difference thresholds
-    to compensate for the change in the returned value.
-
-    If you are getting this from `var`, use `varmult` instead.
-    """, :abs2)
-    return mapreducec(v->float(v)^2, +, zero(eltype(c)), c)
-end
-
-module Future
-using ..ColorTypes
-using ..ColorVectorSpace: ⋅, dot
-"""
-    ColorVectorSpace.Future.abs2(c)
-
-Return a scalar "squared magnitude" for color types. For RGB and gray, this is just the mean-square
-channelwise intensity.
-
-Compatibility note: this gives a different result from `Base.abs2(c)`, but eventually `Base.abs2` will switch
-to the definition used here. Using `ColorVectorSpace.Future.abs2` thus future-proofs your code.
-For more information about the transition, see ColorVectorSpace's README.
-"""
-abs2(c::Union{Real,AbstractGray,AbstractRGB}) = c ⋅ c
-end
+Base.abs2(c::Union{AbstractGray,AbstractRGB}) = c ⋅ c
 
 isdefined(Base, :get_extension) || using Requires
 

@@ -429,6 +429,8 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test !isnan(RGB(1, Inf, 0.5))
         @test abs(RGB(0.1,0.2,0.3)) == RGB(0.1,0.2,0.3)
         cv = RGB(0.1,0.2,0.3)
+        @test ColorVectorSpace.Future.abs2(cv) == cv ⋅ cv
+        @test_logs (:warn, r"has been changed to ensure") ColorVectorSpace.Future.abs2(cv)
         @test abs2(cv) == cv ⋅ cv
         @test abs2(cv) ≈ norm(cv)^2
         @test_throws MethodError sum(abs2, RGB(0.1,0.2,0.3))

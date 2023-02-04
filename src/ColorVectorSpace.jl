@@ -511,7 +511,7 @@ For more information about the transition, see ColorVectorSpace's README.
 abs2(c::Union{Real,AbstractGray,AbstractRGB}) = c ⋅ c
 end
 
-isdefined(Base, :get_extension) || include("../ext/SpecialFunctionsExt.jl")
+isdefined(Base, :get_extension) || using Requires
 
 function __init__()
     if isdefined(Base, :Experimental) && isdefined(Base.Experimental, :register_error_hint)
@@ -538,6 +538,9 @@ function __init__()
                 end
             end
         end
+    end
+    @static if !isdefined(Base, :get_extension)
+        @require SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b" include("../ext/SpecialFunctionsExt.jl")
     end
 end
 

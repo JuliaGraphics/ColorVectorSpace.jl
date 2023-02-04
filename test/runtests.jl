@@ -280,12 +280,16 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         for g in (Gray(0.4), Gray{N0f8}(0.4))
             @test @inferred(zero(g)) === typeof(g)(0)
             @test @inferred(oneunit(g)) === typeof(g)(1)
+            SFE = if isdefined(Base, :get_extension)
+                Base.get_extension(ColorVectorSpace, :SpecialFunctionsExt)
+            else
+                ColorVectorSpace.SpecialFunctionsExt
+            end
             for mod in (
                 ColorVectorSpace,
-                Base.get_extension(ColorVectorSpace, :SpecialFunctionsExt),
+                SFE,
                 (; UnaryOps = (:trunc, :floor, :round, :ceil, :eps, :bswap)),
             )
-                mod === nothing && continue  # pre weak dependencies
                 for op in mod.UnaryOps
                     op ∈ (:frexp, :exponent, :modf, :logfactorial) && continue
                     op === :~ && eltype(g) === Float64 && continue

@@ -1,7 +1,8 @@
 module SpecialFunctionsExt
-    import SpecialFunctions
     import ColorVectorSpace
     using ColorTypes
+
+    isdefined(Base, :get_extension) ? (import SpecialFunctions) : (import ..SpecialFunctions)
 
     const UnaryOps = (
         :gamma, :logfactorial, :erf, :erfc, :erfcx, :erfi, :dawson,

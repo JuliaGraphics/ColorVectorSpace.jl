@@ -1,6 +1,6 @@
 module ColorVectorSpace
 
-using ColorTypes, FixedPointNumbers, SpecialFunctions
+using ColorTypes, FixedPointNumbers
 using TensorCore
 import TensorCore: ⊙, ⊗
 
@@ -11,7 +11,7 @@ import Base: abs, clamp, convert, copy, div, eps, float,
     isfinite, isinf, isnan, isless, length, mapreduce, oneunit,
     promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
     mod, mod1, rem, atan, hypot, max, min, real, typemin, typemax
-# More unaryOps (mostly math functions)
+# More unaryops (mostly math functions)
 import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   asin, acos, atan, asinh, acosh, atanh,
                   sec, csc, cot, asec, acsc, acot,
@@ -23,7 +23,6 @@ import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
                   exp2, exp10, expm1, cbrt, sqrt,
                   significand, frexp, modf
 import LinearAlgebra: norm, ⋅, dot, promote_leaf_eltypes  # norm1, norm2, normInf
-import SpecialFunctions: gamma, logabsgamma, lfact
 using Statistics
 import Statistics: middle # and `_mean_promote`
 
@@ -293,7 +292,7 @@ dotc(x::T, y::T) where {T<:AbstractRGB} = 0.200f0 * acc(red(x))*acc(red(y)) + 0.
 dotc(x::AbstractRGB, y::AbstractRGB) = dotc(promote(x, y)...)
 
 # Scalar Gray
-const unaryOps = (:~, :conj, :abs,
+const unaryops = (:~, :conj, :abs,
                   :sin, :cos, :tan, :sinh, :cosh, :tanh,
                   :asin, :acos, :atan, :asinh, :acosh, :atanh,
                   :sec, :csc, :cot, :asec, :acsc, :acot,
@@ -303,20 +302,9 @@ const unaryOps = (:~, :conj, :abs,
                   :asind, :atand, :rad2deg, :deg2rad,
                   :log, :log2, :log10, :log1p, :exponent, :exp,
                   :exp2, :exp10, :expm1, :cbrt, :sqrt,
-                  :significand,
-                  :gamma, :lfact, :frexp, :modf,
-                  :(SpecialFunctions.erf), :(SpecialFunctions.erfc),
-                  :(SpecialFunctions.erfcx), :(SpecialFunctions.erfi), :(SpecialFunctions.dawson),
-                  :(SpecialFunctions.airyai),
-                  :(SpecialFunctions.airyaiprime), :(SpecialFunctions.airybi), :(SpecialFunctions.airybiprime),
-                  :(SpecialFunctions.besselj0), :(SpecialFunctions.besselj1), :(SpecialFunctions.bessely0), :(SpecialFunctions.bessely1),
-                  :(SpecialFunctions.eta), :(SpecialFunctions.zeta), :(SpecialFunctions.digamma))
-for op in unaryOps
+                  :significand, :frexp, :modf)
+for op in unaryops
     @eval ($op)(c::AbstractGray) = Gray($op(gray(c)))
-end
-function logabsgamma(c::AbstractGray)
-    lagc, s = logabsgamma(gray(c))
-    return Gray(lagc), s
 end
 
 middle(c::AbstractGray) = arith_colorant_type(c)(middle(gray(c)))
@@ -523,6 +511,8 @@ For more information about the transition, see ColorVectorSpace's README.
 abs2(c::Union{Real,AbstractGray,AbstractRGB}) = c ⋅ c
 end
 
+isdefined(Base, :get_extension) || using Requires
+
 function __init__()
     if isdefined(Base, :Experimental) && isdefined(Base.Experimental, :register_error_hint)
         Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
@@ -548,6 +538,9 @@ function __init__()
                 end
             end
         end
+    end
+    @static if !isdefined(Base, :get_extension)
+        @require SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b" include("../ext/SpecialFunctionsExt.jl")
     end
 end
 

@@ -30,12 +30,6 @@ export RGBRGB, complement, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm
 
 MathTypes{T,C<:Union{AbstractGray{T},AbstractRGB{T}}} = Union{C,TransparentColor{C,T}}
 
-if Base.VERSION >= v"1.5"
-    @inline _depwarn(msg, funcsym; force=false) = Base.depwarn(msg, funcsym; force=force)
-else
-    @inline _depwarn(msg, funcsym; force=false) = Base.depwarn(msg, funcsym)
-end
-
 ## Version compatibility with ColorTypes
 ### TODO: Remove the definitons other than `one` when dropping ColorTypes v0.10 support
 
@@ -491,6 +485,12 @@ module Future
     Return a scalar "squared magnitude" for color types. For RGB and gray, this is just the mean-square
     channelwise intensity.
     """
+
+    if VERSION >= v"1.5"
+        @inline _depwarn(msg, funcsym; force=false) = Base.depwarn(msg, funcsym; force=force)
+    else
+        @inline _depwarn(msg, funcsym; force=false) = Base.depwarn(msg, funcsym)
+    end
 
     function abs2(c::Union{Real,AbstractGray,AbstractRGB})
         _depwarn("""

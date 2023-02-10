@@ -483,6 +483,25 @@ Base.abs2(c::Union{AbstractGray,AbstractRGB}) = c ⋅ c
 
 isdefined(Base, :get_extension) || using Requires
 
+module Future
+    using ..ColorTypes
+    using ..ColorVectorSpace: ⋅
+    """
+        ColorVectorSpace.Future.abs2(c)
+    Return a scalar "squared magnitude" for color types. For RGB and gray, this is just the mean-square
+    channelwise intensity.
+    """
+
+    function abs2(c::Union{Real,AbstractGray,AbstractRGB})
+        _depwarn("""
+            The return value of `abs2` has been changed to ensure that `abs2(g::Gray) ≈ abs2(RGB(g::Gray))`.
+            To avoid this warning, use `abs2` instead of `ColorVectorSpace.Future.abs2`.
+            """, :abs2
+        )
+        c ⋅ c
+    end
+end
+
 function __init__()
     if isdefined(Base, :Experimental) && isdefined(Base.Experimental, :register_error_hint)
         Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs

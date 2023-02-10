@@ -26,6 +26,8 @@ import LinearAlgebra: norm, ⋅, dot, promote_leaf_eltypes  # norm1, norm2, norm
 using Statistics
 import Statistics: middle # and `_mean_promote`
 
+isdefined(Base, :get_extension) || using Requires
+
 export RGBRGB, complement, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm, varmult, stdmult
 
 MathTypes{T,C<:Union{AbstractGray{T},AbstractRGB{T}}} = Union{C,TransparentColor{C,T}}
@@ -474,8 +476,6 @@ Base.length(r::StepRange{<:AbstractGray,<:AbstractGray}) = length(StepRange(gray
 Base.length(r::StepRange{<:AbstractGray})                = length(StepRange(gray(r.start), r.step,       gray(r.stop)))
 
 Base.abs2(c::Union{AbstractGray,AbstractRGB}) = c ⋅ c
-
-isdefined(Base, :get_extension) || using Requires
 
 module Future
     using ..ColorTypes

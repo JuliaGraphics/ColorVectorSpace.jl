@@ -129,12 +129,6 @@ for `g = Gray(0.3)`, ColorVectorSpace returned different values for `abs2(g)` an
 This behavior is retained, with a deprecation warning, starting with
 ColorVectorSpace 0.9.6.
 
-**In the future**, `abs2` will be defined as `abs2(c) == c⋅c ≈ norm(c)^2`.
-This effectively divides the old result by 3; code that imposes thresholds
-on `abs2(c)` may need to be updated.
-You can obtain that behavior now--and circumvent the deprecation warning--
-by using `ColorVectorSpace.Future.abs2(c)`.
-
 We anticipate the following transition schedule:
 
 - Sept 21, 2021: release ColorVectorSpace 0.9.7 with both `abs2` and `Future.abs2`.
@@ -143,8 +137,8 @@ We anticipate the following transition schedule:
 - May 19, 2022: make the deprecation warning "noisy" (cannot be turned off).
   This is designed to catch user-level scripts that may need to update thresholds
   or other constants.
-- *July 1, 2022: transition `abs2` to the new definition
+- *July 20, 2023: transition `abs2` to the new definition
   and make `Future.abs2` give a "noisy" depwarn to revert to regular `abs2`.
-- *Dec 1, 2022: remove `Future.abs2`.
+- *Dec 1, 2023: remove `Future.abs2`.
 
-The two marked with `*` denote breaking releases.
+The line marked with `*` denotes a breaking release.

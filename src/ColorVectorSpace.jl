@@ -494,9 +494,8 @@ module Future
 
     function abs2(c::Union{Real,AbstractGray,AbstractRGB})
         _depwarn("""
-            The return value of `abs2` has been changed to ensure that `abs2(g::Gray) ≈ abs2(RGB(g::Gray))`.
-            To avoid this warning, use `abs2` instead of `ColorVectorSpace.Future.abs2`.
-            """, :abs2
+            The return value of `abs2` is now consistent with `ColorVectorSpace.Future.abs2`.
+            `ColorVectorSpace.Future.abs2` will be removed in the future, please switch to `abs2`.""", :abs2
         )
         c ⋅ c
     end

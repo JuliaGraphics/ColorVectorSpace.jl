@@ -137,8 +137,8 @@ We anticipate the following transition schedule:
 - May 19, 2022: make the deprecation warning "noisy" (cannot be turned off).
   This is designed to catch user-level scripts that may need to update thresholds
   or other constants.
-- Feb 1, 2023: transition `abs2` to the new definition
+- *July 20, 2023: transition `abs2` to the new definition
   and make `Future.abs2` give a "noisy" depwarn to revert to regular `abs2`.
-- *July 1, 2023: remove `Future.abs2`.
+- *Dec 1, 2023: remove `Future.abs2`.
 
 The line marked with `*` denotes a breaking release.

@@ -275,7 +275,9 @@ Complement{<: Any, N, C}(args::Vararg{T,N}) where {C <: Colorant,N,T} = Compleme
 # Alias for Complement with Colorant first.
 const Inverse{C <: Colorant, T, N} = Complement{T, N, C}
 
-@inline Base.parent(c::Complement) = c.parent
+@inline Base.parent(c::Complement) = getfield(c, :parent)
+Base.getproperty(c::Complement, s::Symbol) = getproperty(parent(c), s)
+Base.propertynames(c::Complement) = propertynames(parent(c))
 Base.show(io::IO, c::Complement) = print(io, "Complement($(parent(c)))")
 
 ColorTypes._comp(::Val{N}, c::Complement) where N = getfield(parent(c), N)

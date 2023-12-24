@@ -251,14 +251,8 @@ underlying value.
 * `Gray(0)` represents black. `Complement(Gray(0))` represents white.
 * `RGB(1,0,0)` represents red. `Complement(RGB(1,0,0))` represents cyan.
 
-Mathematical operations on `Complement` will affect the underlying
-`Colorant` rather than changing the value of the complement. That is
-mutiplying middle gray by two will produce black.
-
-```julia
-julia> Complement(Gray(0.25)) * 2
-Complement(Gray(0.5))
-```
+Mathematics on `Complement` has not been implemented yet. `convert` to the
+the base `Colorant` to perform arithmetic.
 
 # Parameters
 * `T` is the element type as in `Colorant`
@@ -287,17 +281,6 @@ ColorTypes.green(c::Complement) = green(parent(c))
 ColorTypes.blue(c::Complement) = blue(parent(c))
 ColorTypes.gray(c::Complement) = gray(parent(c))
 
-#=
-# I contemplated whether the components should apply the complement.
-# I decided that this should be deferred to convert
-ColorTypes._comp(::Val{N}, c::Complement) where N = complement(getfield(parent(c), N))
-ColorTypes.alpha(c::Complement) = alpha(parent(c))
-ColorTypes.red(c::Complement) = complement(red(parent(c)))
-ColorTypes.green(c::Complement) = complement(green(parent(c)))
-ColorTypes.blue(c::Complement) = complement(blue(parent(c)))
-ColorTypes.gray(c::Complement) = complement(gray(parent(c)))
-=#
-
 ColorTypes.color(c::Complement) = Complement(color(parent(c)))
 ColorTypes.color_type(c::Type{Complement{T, N, C}}) where {T,N,C} = Complement{T, N, color_type(C)}
 ColorTypes.base_color_type(c::Type{<: Complement{<: Any, N, C}}) where {N,C} = Complement{<: Any, N, base_color_type(C)}
@@ -311,18 +294,6 @@ ColorTypes.nan(::Type{Complement{T,N,C}})  where {T,N,C} = Complement{T,N,C}(nan
 complement(c::Complement) = parent(c)
 Base.convert(::Type{C}, c::Complement{<: Any, <: Any, <: Colorant}) where {C <: Colorant} = convert(C, complement(parent(c)))
 Base.convert(::Type{N}, c::Complement{<: Number, 1}) where {N <: Number} = convert(N, complement(parent(c)))
-
-# Math on Complement affects the underlying Colorant
-(*)(f::Real, c::Complement) = Complement(f * complement(c))
-(*)(c::Complement, f::Real) = (*)(f, c)
-(/)(c::Complement, f::Real) = Complement(complement(c) / f)
-(+)(c::Complement) = Complement(+complement(c))
-(-)(c::Complement) = Complement(-complement(c))
-abs(c::Complement) = Complement(abs(complement(c)))
-norm(c::Complement) = norm(complement(c))
-
-# We probably need to rearrange the code to declare Complement first
-# MathTypes = Union{Complement, MathTypes}
 
 ## Math on Colors. These implementations encourage inlining and,
 ## for the case of Normed types, nearly halve the number of multiplications (for RGB)

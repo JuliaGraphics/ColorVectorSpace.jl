@@ -245,7 +245,7 @@ Represents the complementary colorant of its `parent`. To actualize the color,
 `convert` to `C` at which point `complement` will be applied. Like `complement`
 the alpha channel is not modified.
 
-The main interpretation of this type is to invert the *interpretation* of the
+The main application of this type is to invert the *interpretation* of the
 underlying value.
 
 * `Gray(0)` represents black. `Complement(Gray(0))` represents white.

@@ -309,8 +309,9 @@ For a `<: Colorant{T,N}`, the first argument could be one of
 """
 Base.reinterpret(::Type{Complement}, array::AbstractArray{C}) where {T, N, C <: Colorant{T,N}} =
     reinterpret(Complement{C,T,N}, array)
+# Address ambiguity
 Base.reinterpret(::Type{Complement}, array::Base.ReinterpretArray{C, N, S, A, false} where {N, S, A<:AbstractArray{S, N}}) where {TT, NN, C<:ColorTypes.Colorant{TT, NN}} =
-    reinterpret(Complement{C,T,N}, array)
+    reinterpret(Complement{C,TT,NN}, array)
 
 """
     ComplementArray{T,N,A} <: AbstractArray{T,N}

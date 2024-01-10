@@ -290,6 +290,7 @@ ColorTypes.nan(::Type{Complement{C,T,N}})  where {C,T,N} = Complement{C,T,N}(nan
 
 complement(c::Complement) = parent(c)
 Base.convert(::Type{C}, c::Complement) where {C <: Colorant} = convert(C, complement(parent(c)))
+Base.convert(::Type{Complement}, c::C) where {T ,N, C <: Complement{<: Colorant,T,N}} = c
 Base.convert(::Type{Complement}, c::C) where {T, N, C <: Colorant{T,N}} = Complement(complement(c))
 Base.convert(::Type{Complement{C}}, c::C) where {T, N, C <: Colorant{T,N}} = Complement(complement(c))
 Base.convert(::Type{Complement{C,T}}, c::C) where {T, N, C <: Colorant{T,N}} = Complement(complement(c))
@@ -308,9 +309,7 @@ For a `<: Colorant{T,N}`, the first argument could be one of
 """
 Base.reinterpret(::Type{Complement}, array::AbstractArray{C}) where {T, N, C <: Colorant{T,N}} =
     reinterpret(Complement{C,T,N}, array)
-Base.reinterpret(::Type{Complement{C}}, array::AbstractArray{C}) where {T, N, C <: Colorant{T,N}} =
-    reinterpret(Complement{C,T,N}, array)
-Base.reinterpret(::Type{Complement{C, T}}, array::AbstractArray{C}) where {T, N, C <: Colorant{T,N}} =
+Base.reinterpret(::Type{Complement}, array::Base.ReinterpretArray{C, N, S, A, false} where {N, S, A<:AbstractArray{S, N}}) where {TT, NN, C<:ColorTypes.Colorant{TT, NN}} =
     reinterpret(Complement{C,T,N}, array)
 
 """

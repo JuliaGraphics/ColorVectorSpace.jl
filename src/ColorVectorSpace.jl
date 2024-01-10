@@ -259,7 +259,7 @@ the base `Colorant` to perform arithmetic.
 * `N` is the number of components as in `Colorant`
 * `C` is a `Colorant{T,N}`
 """
-struct Complement{T, N, C <: Union{Number, Colorant{T,N}}} <: Colorant{T,N}
+struct Complement{T, N, C <: Union{Number, Colorant{T,N}}} <: Color{T,N}
     parent::C
 end
 Complement(parent::T) where T <: Number = Complement{T, 1, T}(parent)
@@ -276,10 +276,10 @@ Base.show(io::IO, c::Complement) = print(io, "Complement($(parent(c)))")
 
 ColorTypes._comp(::Val{N}, c::Complement) where N = getfield(parent(c), N)
 ColorTypes.alpha(c::Complement) = alpha(parent(c))
-ColorTypes.red(c::Complement) = red(parent(c))
-ColorTypes.green(c::Complement) = green(parent(c))
-ColorTypes.blue(c::Complement) = blue(parent(c))
-ColorTypes.gray(c::Complement) = gray(parent(c))
+ColorTypes.red(c::Complement) = complement(red(parent(c)))
+ColorTypes.green(c::Complement) = complement(green(parent(c)))
+ColorTypes.blue(c::Complement) = complement(blue(parent(c)))
+ColorTypes.gray(c::Complement) = complement(gray(parent(c)))
 
 ColorTypes.color(c::Complement) = Complement(color(parent(c)))
 ColorTypes.color_type(c::Type{Complement{T, N, C}}) where {T,N,C} = Complement{T, N, color_type(C)}

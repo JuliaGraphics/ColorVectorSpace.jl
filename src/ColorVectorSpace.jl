@@ -267,7 +267,10 @@ Complement{C}(args...) where {T, N, C <: Colorant{T,N}} = Complement{C,T,N}(C(ar
 Complement{C, <: Any, N}(args::Vararg{T,N}) where {C <: Colorant,N,T} = Complement(C(args...))
 
 @inline Base.parent(c::Complement) = getfield(c, :parent)
-Base.getproperty(c::Complement, s::Symbol) = getproperty(parent(c), s)
+function Base.getproperty(c::Complement, s::Symbol)
+    s === :alpha && return getproperty(parent(c), :alpha)
+    return complement(getproperty(parent(c), s))
+end
 Base.propertynames(c::Complement) = propertynames(parent(c))
 Base.show(io::IO, c::Complement) = print(io, "Complement($(parent(c)))")
 
@@ -321,7 +324,7 @@ ComplementArray is an `AbstractArray{T}` that wraps an `AbstractArray` with a
 `Complement{T}` element type. This allows for a `AbstractArray{Complement{T}}`
 to be wrapped into an `AbstractArray{T}` without additional allocations.
 """
-struct ComplementArray{T,N,A} <: AbstractArray{T,N}
+struct ComplementArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
     parent::A
     ComplementArray(parent::A) where {T,N,A <: AbstractArray{<:Complement{T},N}} = new{T,N,A}(parent)
 end

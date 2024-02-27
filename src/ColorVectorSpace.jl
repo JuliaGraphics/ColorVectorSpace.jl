@@ -28,7 +28,8 @@ import Statistics: middle # and `_mean_promote`
 
 isdefined(Base, :get_extension) || using Requires
 
-export RGBRGB, complement, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm, varmult, stdmult
+export RGBRGB, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm, varmult, stdmult
+export complement, Complement, ComplementArray
 
 MathTypes{T,C<:Union{AbstractGray{T},AbstractRGB{T}}} = Union{C,TransparentColor{C,T}}
 
@@ -237,6 +238,115 @@ an array: `complement.(x)`
 complement(x::Union{Number,Colorant}) = oneunit(x)-x
 complement(x::TransparentColor) = typeof(x)(complement(color(x)), alpha(x))
 
+"""
+    Complement{C,T,N}
+
+Represents the complementary colorant of its `parent`. To actualize the color,
+`convert` to `C` at which point `complement` will be applied. Like `complement`
+the alpha channel is not modified.
+
+The main application of this type is to invert the *interpretation* of the
+underlying value.
+
+* `Gray(0)` represents black. `Complement(Gray(0))` represents white.
+* `RGB(1,0,0)` represents red. `Complement(RGB(1,0,0))` represents cyan.
+
+Mathematics on `Complement` has not been implemented yet. `convert` to the
+the base `Colorant` to perform arithmetic.
+
+# Parameters
+* `C` is a `Colorant{T,N}`
+* `T` is the element type as in `Colorant`
+* `N` is the number of components as in `Colorant`
+"""
+struct Complement{C <: Colorant, T, N} <: Colorant{T,N}
+    parent::C
+end
+Complement(c::C) where {T, N, C <: Colorant{T,N}} = Complement{C,T,N}(c)
+Complement{C}(args...) where {T, N, C <: Colorant{T,N}} = Complement{C,T,N}(C(args...))
+Complement{C, <: Any, N}(args::Vararg{T,N}) where {C <: Colorant,N,T} = Complement(C(args...))
+
+@inline Base.parent(c::Complement) = getfield(c, :parent)
+function Base.getproperty(c::Complement, s::Symbol)
+    s === :alpha && return getproperty(parent(c), :alpha)
+    return complement(getproperty(parent(c), s))
+end
+Base.propertynames(c::Complement) = propertynames(parent(c))
+Base.show(io::IO, c::Complement) = print(io, "Complement($(parent(c)))")
+
+ColorTypes._comp(::Val{N}, c::Complement) where N = getfield(parent(c), N)
+ColorTypes.alpha(c::Complement) = alpha(parent(c))
+ColorTypes.red(c::Complement) = complement(red(parent(c)))
+ColorTypes.green(c::Complement) = complement(green(parent(c)))
+ColorTypes.blue(c::Complement) = complement(blue(parent(c)))
+ColorTypes.gray(c::Complement) = complement(gray(parent(c)))
+
+ColorTypes.color(c::Complement) = Complement(color(parent(c)))
+ColorTypes.color_type(::Type{Complement{C, T, N}}) where {C,T,N} = Complement{color_type(C), T, N}
+ColorTypes.base_color_type(::Type{<: Complement{C, <: Any, N}}) where {N,C} = Complement{base_color_type(C), <: Any, N}
+ColorTypes.base_colorant_type(::Type{<: Complement{C, <: Any, N}}) where {N,C} = Complement{base_colorant_type(C), <: Any, N}
+
+Base.oneunit(::Type{Complement{C,T,N}}) where {C,T,N} = Complement{C,T,N}(zero(C))
+Base.zero(::Type{Complement{C,T,N}})  where {C,T,N} = Complement{C,T,N}(oneunit(C))
+Base.one(::Type{Complement{C,T,N}})  where {C,T,N} = Complement{C,T,N}(zero(C))
+ColorTypes.nan(::Type{Complement{C,T,N}})  where {C,T,N} = Complement{C,T,N}(nan(C))
+
+complement(c::Complement) = parent(c)
+Base.convert(::Type{C}, c::Complement) where {C <: Colorant} = convert(C, complement(parent(c)))
+Base.convert(::Type{Complement}, c::C) where {T ,N, C <: Complement{<: Colorant,T,N}} = c
+Base.convert(::Type{Complement}, c::C) where {T, N, C <: Colorant{T,N}} = Complement(complement(c))
+Base.convert(::Type{Complement{C}}, c::C) where {T, N, C <: Colorant{T,N}} = Complement(complement(c))
+Base.convert(::Type{Complement{C,T}}, c::C) where {T, N, C <: Colorant{T,N}} = Complement(complement(c))
+Base.convert(::Type{Complement{C,T,N}}, c::C) where {T, N, C <: Colorant{T,N}} = Complement(complement(c))
+
+"""
+    reinterpret(::Type{<: Complement}, array::AbstractArray{<: Colorant{T,N}})
+
+Reinterpret an `AbstractArray`` of `Colorant{T,N}`, C, as an `AbstractArray`` of `Complement{C,T,N}`.
+
+For a `<: Colorant{T,N}`, the first argument could be one of
+* `Complement`,
+* `Complement{C}`,
+* `Complement{C, T}`
+* `Complement{C, T, N}` (Base implementation of `reinterpret`)
+"""
+Base.reinterpret(::Type{Complement}, array::AbstractArray{C}) where {T, N, C <: Colorant{T,N}} =
+    reinterpret(Complement{C,T,N}, array)
+# Address ambiguity
+Base.reinterpret(::Type{Complement}, array::Base.ReinterpretArray{C, N, S, A, false} where {N, S, A<:AbstractArray{S, N}}) where {TT, NN, C<:ColorTypes.Colorant{TT, NN}} =
+    reinterpret(Complement{C,TT,NN}, array)
+
+"""
+    ComplementArray{T,N,A} <: AbstractArray{T,N}
+    ComplementArray(::AbstractArray{<: Complement})
+
+ComplementArray is an `AbstractArray{T}` that wraps an `AbstractArray` with a
+`Complement{T}` element type. This allows for a `AbstractArray{Complement{T}}`
+to be wrapped into an `AbstractArray{T}` without additional allocations.
+"""
+struct ComplementArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
+    parent::A
+    ComplementArray(parent::A) where {T,N,A <: AbstractArray{<:Complement{T},N}} = new{T,N,A}(parent)
+end
+Base.parent(a::ComplementArray) = a.parent
+Base.size(a::ComplementArray) = size(a.parent)
+function Base.getindex(a::ComplementArray{T}, I::Vararg{Int,N})::T where {T,N}
+    getindex(a.parent, I...)
+end
+function Base.setindex!(a::ComplementArray{T}, v, I::Vararg{Int, N}) where {T,N}
+    setindex!(a.parent, convert(eltype(a.parent), v))
+end
+Base.IndexStyle(a::ComplementArray) = IndexStyle(a.parent)
+
+function Base.show(io::IO, mime::MIME"image/svg+xml", c::Complement{C}) where C
+    show(io, mime, C(c))
+end
+function Base.show(io::IO, mime::MIME"image/svg+xml", cs::AbstractVector{<: Complement{C}}) where {C}
+    show(io, mime, ComplementArray(cs))
+end
+function Base.show(io::IO, mime::MIME"image/svg+xml", cs::AbstractMatrix{<: Complement{C}}) where {C}
+    show(io, mime, ComplementArray(cs))
+end
 
 ## Math on Colors. These implementations encourage inlining and,
 ## for the case of Normed types, nearly halve the number of multiplications (for RGB)

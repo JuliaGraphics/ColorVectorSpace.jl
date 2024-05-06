@@ -864,4 +864,6 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test r[2] == RGB(254.0f0/255, 0, 1.0f0/255)
     end
 
+    include("Complement.jl")
+
 end

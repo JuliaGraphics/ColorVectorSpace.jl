@@ -312,6 +312,8 @@ For a `<: Colorant{T,N}`, the first argument could be one of
 """
 Base.reinterpret(::Type{Complement}, array::AbstractArray{C}) where {T, N, C <: Colorant{T,N}} =
     reinterpret(Complement{C,T,N}, array)
+Base.reinterpret(::Type{Complement}, c::C) where {T, N, C <: Colorant{T,N}} =
+    reinterpret(Complement{C,T,N}, c)
 # Address ambiguity
 Base.reinterpret(::Type{Complement}, array::Base.ReinterpretArray{C, N, S, A, false} where {N, S, A<:AbstractArray{S, N}}) where {TT, NN, C<:ColorTypes.Colorant{TT, NN}} =
     reinterpret(Complement{C,TT,NN}, array)
@@ -324,7 +326,7 @@ ComplementArray is an `AbstractArray{T}` that wraps an `AbstractArray` with a
 `Complement{T}` element type. This allows for a `AbstractArray{Complement{T}}`
 to be wrapped into an `AbstractArray{T}` without additional allocations.
 """
-struct ComplementArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
+struct ComplementArray{T,N,A<:AbstractArray{<:Complement{T},N}} <: AbstractArray{T,N}
     parent::A
     ComplementArray(parent::A) where {T,N,A <: AbstractArray{<:Complement{T},N}} = new{T,N,A}(parent)
 end
@@ -334,7 +336,7 @@ function Base.getindex(a::ComplementArray{T}, I::Vararg{Int,N})::T where {T,N}
     getindex(a.parent, I...)
 end
 function Base.setindex!(a::ComplementArray{T}, v, I::Vararg{Int, N}) where {T,N}
-    setindex!(a.parent, convert(eltype(a.parent), v))
+    setindex!(a.parent, convert(eltype(a.parent), v), I...)
 end
 Base.IndexStyle(a::ComplementArray) = IndexStyle(a.parent)
 

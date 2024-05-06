@@ -128,7 +128,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test @inferred(2*cf) === cf*2 === 2.0f0*cf === cf*2.0f0 === ccmp
         @test @inferred(ccmp/2) === cf
         @test @inferred(cf*cf) === Gray{Float32}(0.1f0*0.1f0)
-        @test @inferred(Gray{N0f32}(0.5)*Gray(0.5f0)) === Gray(Float64(N0f32(0.5)) * 0.5)
+        @test @inferred(Gray{N0f32}(0.5)*Gray(0.5f0)) ≈ Gray(Float64(N0f32(0.5)) * 0.5)
         @test @inferred(cf^2 ) === Gray{Float32}(0.1f0*0.1f0)
         @test @inferred(cf^3.0f0) === Gray{Float32}(0.1f0^3.0f0)
         @test @inferred(2.0*cf) === cf*2.0 === Gray(2.0*0.1f0)

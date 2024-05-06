@@ -56,8 +56,11 @@ end
         @test convert(Complement{RGB{Float64}}, _color) == Complement(complement(_color))
         @test convert(Complement{RGB{Float64}, Float64}, _color) == Complement(complement(_color))
         @test convert(Complement{RGB{Float64}, Float64, 3}, _color) == Complement(complement(_color))
-        @test reinterpret(typeof(comp), _color) == comp
-        @test reinterpret(Complement, _color) == comp
+
+        if VERSION ≥ v"1.10"
+            @test reinterpret(typeof(comp), _color) == comp
+            @test reinterpret(Complement, _color) == comp
+        end
         @test all(reinterpret(typeof(comp), [_color]) .≈ [comp])
     end
 end

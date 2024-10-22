@@ -1,7 +1,7 @@
 # ColorVectorSpace
 
 [![Build Status](https://github.com/JuliaGraphics/ColorVectorSpace.jl/workflows/Unit%20test/badge.svg)](https://github.com/JuliaGraphics/ColorVectorSpace.jl/actions)
-[![codecov.io](http://codecov.io/github/JuliaGraphics/ColorVectorSpace.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaGraphics/ColorVectorSpace.jl?branch=master)
+[![codecov](https://codecov.io/github/JuliaGraphics/ColorVectorSpace.jl/graph/badge.svg?token=NFLslfrU3p)](https://codecov.io/github/JuliaGraphics/ColorVectorSpace.jl)
 
 This package is an add-on to [ColorTypes](https://github.com/JuliaGraphics/ColorTypes.jl), and provides fast
 mathematical operations for objects with types such as `RGB` and

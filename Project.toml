@@ -14,7 +14,7 @@ TensorCore = "62fd8b95-f654-4bbd-a8a5-9c27f68ccd50"
 ColorTypes = "0.11, 0.12"
 FixedPointNumbers = "0.8.2"
 Requires = "1"
-SpecialFunctions = "1, 2.0"
+SpecialFunctions = "1, 2"
 TensorCore = "0.1"
 julia = "1"
 

@@ -275,6 +275,10 @@ end
 (-)(a::TransparentRGB, b::TransparentRGB) = _mapc(rettype(-, a, b), -, a, b)
 
 # New multiplication operators
+function (⋅)(x::C, y::C) where C <: AbstractRGB  # ambiguity fix
+    T = acctype(eltype(x), eltype(y))
+    (T(red(x))*T(red(y)) + T(green(x))*T(green(y)) + T(blue(x))*T(blue(y)))/3
+end
 function (⋅)(x::AbstractRGB, y::AbstractRGB)
     T = acctype(eltype(x), eltype(y))
     (T(red(x))*T(red(y)) + T(green(x))*T(green(y)) + T(blue(x))*T(blue(y)))/3
@@ -418,6 +422,7 @@ Base.zero(a::RGBRGB) = zero(typeof(a))
 *(a::RGBRGB, α::Real) = α*a
 /(a::RGBRGB, α::Real) = (1/α)*a
 
+⊗(a::C, b::C) where C<:AbstractRGB = invoke(⊗, Tuple{AbstractRGB,AbstractRGB}, a, b)   # ambiguity
 function ⊗(a::AbstractRGB, b::AbstractRGB)
     ar, ag, ab = red(a), green(a), blue(a)
     br, bg, bb = red(b), green(b), blue(b)

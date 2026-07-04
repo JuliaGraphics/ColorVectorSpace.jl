@@ -12,14 +12,11 @@ TensorCore = "62fd8b95-f654-4bbd-a8a5-9c27f68ccd50"
 
 [compat]
 ColorTypes = "0.12"
-FixedPointNumbers = "0.8.2"
+FixedPointNumbers = "0.8.2, 0.9"
 Requires = "1"
 SpecialFunctions = "2"
 TensorCore = "0.1"
 julia = "1.6"
-
-[weakdeps]
-SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [extensions]
 SpecialFunctionsExt = "SpecialFunctions"
@@ -31,3 +28,6 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["SpecialFunctions", "Colors", "Test"]
+
+[weakdeps]
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"

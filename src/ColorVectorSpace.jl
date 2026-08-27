@@ -485,18 +485,17 @@ Base.abs2(c::Union{AbstractGray,AbstractRGB}) = c ⋅ c
 module Future
     using ..ColorTypes
     using ..ColorVectorSpace: ⋅
-    """
-        ColorVectorSpace.Future.abs2(c)
-    Return a scalar "squared magnitude" for color types. For RGB and gray, this is just the mean-square
-    channelwise intensity.
-    """
-
     if VERSION >= v"1.5"
         @inline _depwarn(msg, funcsym; force=false) = Base.depwarn(msg, funcsym; force=force)
     else
         @inline _depwarn(msg, funcsym; force=false) = Base.depwarn(msg, funcsym)
     end
 
+    """
+        ColorVectorSpace.Future.abs2(c)
+    Return a scalar "squared magnitude" for color types. For RGB and gray, this is just the mean-square
+    channelwise intensity.
+    """
     function abs2(c::Union{Real,AbstractGray,AbstractRGB})
         _depwarn("""
             The return value of `abs2` is now consistent with `ColorVectorSpace.Future.abs2`.

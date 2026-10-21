@@ -149,6 +149,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test norm(cf) == norm(cf, 2) == norm(gray(cf))
         @test norm(cf, 1)   == norm(gray(cf), 1)
         @test norm(cf, Inf) == norm(gray(cf), Inf)
+        @test norm(Gray(0.004N0f8)) ≈ Float32(0.004N0f8) # issue #183
         @test @inferred(abs(cf)) === Gray(0.1f0)
         cu = Gray{N0f8}(0.1)
         @test @inferred(2*cu) === cu*2 === Gray(2*gray(cu))
@@ -443,6 +444,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test abs2(cv) ≈ norm(cv)^2
         @test_throws MethodError sum(abs2, RGB(0.1,0.2,0.3))
         @test norm(RGB(0.1,0.2,0.3)) ≈ sqrt(0.14)/sqrt(3)
+        @test norm(RGB(0.004N0f8)) ≈ Float32(0.004N0f8) # issue #183
 
         acu = RGB{N0f8}[cu]
         acf = RGB{Float32}[cf]
@@ -812,8 +814,9 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         x = 0.4
         g = Gray(x)
         c = RGB(g)
-        for p in (0, 1, 2, Inf)
+        @testset "$p-norm equivalence" for p in (0, 1, 2, Inf)
             @test norm(x, p) == norm(g, p) ≈ norm(c, p)
+            @test (p == 0 ? 1.0 : NaN) === norm(Gray(NaN), p) === norm(RGB(NaN), p)
         end
         @test dot(x, x) == dot(g, g) ≈ dot(c, c)
         @test abs2(x) ≈ abs2(g) ≈ abs2(c)

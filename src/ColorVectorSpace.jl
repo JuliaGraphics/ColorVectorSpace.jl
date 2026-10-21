@@ -205,7 +205,15 @@ copy(c::MathTypes) = c
 (-)(c::MathTypes) = mapc(-, c)
 (-)(c::MathTypes{Bool}) = c
 abs(c::MathTypes) = mapc(abs, c)
-norm(c::MathTypes, p::Real=2) = (cc = channels(c); norm(cc, p)/(p == 0 ? length(cc) : length(cc)^(1/p)))
+function norm(c::MathTypes, p::Real=2) # FIXME: make the return types consistent
+    cc = acc.(channels(c))
+    l = norm(cc, p)
+    c isa AbstractGray && return l / (p == 0 ? 1 : 1.0)
+    n = length(cc)
+    p == 2 && return l / sqrt(n)
+    p == 0 && return l / n # n::Int
+    l / n^(1/p)
+end
 (⊙)(a::C, b::C) where {C<:MathTypes} = _mapc(rettype(*, a, b), _mul, a, b)
 (⋅)(a::C, b::C) where {C<:MathTypes} = throw(MethodError(dot, (a, b)))
 (⊗)(a::C, b::C) where {C<:MathTypes} = throw(MethodError(tensor, (a, b)))

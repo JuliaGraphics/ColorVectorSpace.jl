@@ -485,11 +485,6 @@ Base.abs2(c::Union{AbstractGray,AbstractRGB}) = c ⋅ c
 module Future
     using ..ColorTypes
     using ..ColorVectorSpace: ⋅
-    if VERSION >= v"1.5"
-        @inline _depwarn(msg, funcsym; force=false) = Base.depwarn(msg, funcsym; force=force)
-    else
-        @inline _depwarn(msg, funcsym; force=false) = Base.depwarn(msg, funcsym)
-    end
 
     """
         ColorVectorSpace.Future.abs2(c)
@@ -497,7 +492,7 @@ module Future
     channelwise intensity.
     """
     function abs2(c::Union{Real,AbstractGray,AbstractRGB})
-        _depwarn("""
+        Base.depwarn("""
             The return value of `abs2` is now consistent with `ColorVectorSpace.Future.abs2`.
             `ColorVectorSpace.Future.abs2` will be removed in the future, please switch to `abs2`.""", :abs2
         )

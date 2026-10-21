@@ -2,8 +2,16 @@ using LinearAlgebra, Statistics, SpecialFunctions
 using ColorVectorSpace, Colors, FixedPointNumbers
 
 using Test
+using Aqua
 
 using ColorVectorSpace: _mul
+
+@testset "Aqua tests" begin
+    Aqua.test_all(ColorVectorSpace, stale_deps = false, piracies = false)
+    Aqua.test_stale_deps(ColorVectorSpace, ignore = [:Requires])
+    Aqua.test_piracies(ColorVectorSpace,
+        treat_as_own = [Colorant, Color, TransparentColor, AbstractGray, AbstractRGB, Gray])
+end
 
 n8sum(x,y) = Float64(N0f8(x)) + Float64(N0f8(y))
 

@@ -264,7 +264,8 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test @inferred(max(g1, g2)) === g2
         @test @inferred(max(g1, Gray(0.3))) === Gray(0.3)
         @test max(g1, 0.1) === max(0.1, g1) === Float64(gray(g1))
-        @test (@inferred(min(g1, g2)) ) == g1
+        @test @inferred(min(g1, g2)) == g1
+        @test @inferred(min(g1, Gray(0.3))) == g1
         @test min(g1, 0.1) === min(0.1, g1) === 0.1
         a = Gray{Float64}(0.9999999999999999)
         b = Gray{Float64}(1.0)
@@ -688,6 +689,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
             @test @inferred(cb / false) === Gray{Float32}(Inf32)
             @test @inferred(true / cb) === Gray{Float32}(1)
             @test @inferred(cb^true) === cb
+            @test @inferred(cb^last([false])) === cb
         end
         @testset "vs. Gray{Bool}" begin
             @test @inferred(cb + Gray(true)) === @inferred(Gray(true) + cb) === Gray{Bool}(0) # wrapped around
@@ -708,6 +710,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
             @test @inferred(cb / 2) === Gray{Float32}(0.5)
             @test @inferred(2 / cb) === Gray{Float32}(2)
             @test @inferred(cb^1) === cb
+            @test @inferred(cb^last([0])) === cb
         end
         # vs. Float32 and Gray{Float32}
         @testset "vs. $(typeof(x))" for x in (0.5f0, Gray(0.5f0))
@@ -721,6 +724,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
                 @test @inferred(cb^x) === Gray{Float32}(1)
             else
                 @test @inferred(x^true) === Gray{Float32}(0.5)
+                @test @inferred(x^last([false])) === Gray{Float32}(1.0)
             end
         end
         # vs. N0f8 and Gray{N0f8}
@@ -737,6 +741,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
                 @test_broken @inferred(true / x) === Gray{Float32}(1 / 0.6)
                 @test @inferred(true / Gray(1)) === Gray{N0f8}(1.0) # v0.9 behavior
                 @test @inferred(x^true) === Gray{N0f8}(0.6)
+                @test @inferred(x^last([false])) === Gray{N0f8}(1.0)
             end
         end
 

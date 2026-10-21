@@ -107,7 +107,7 @@ rettype(::typeof(*), a::Real, b) = arith_colorant_type(b){multype(typeof(a), elt
 rettype(::typeof(/), a, b::Real) = arith_colorant_type(a){divtype(eltype(a), typeof(b))}
 rettype(::typeof(/), a, b) = arith_colorant_type(a){divtype(eltype(a), eltype(b))}
 rettype(::typeof(^), a, b)          = arith_colorant_type(a){powtype(eltype(a), typeof(b))}
-rettype(::typeof(^), a, b::Integer) = arith_colorant_type(a){powtype(eltype(a), Int)}
+rettype(::typeof(^), a, b::Integer) = arith_colorant_type(a){powtype(eltype(a), b isa Bool ? Bool : Int)}
 
 # Useful for leveraging iterator algorithms. Don't use this externally, as the implementation may change.
 channels(c::AbstractGray)    = (gray(c),)
@@ -280,19 +280,19 @@ middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(
 (-)(a::AbstractGray{Bool}, b::AbstractGray{Bool}) = _mapc(rettype(-, a, b), ⊻, a, b)
 (-)(a::TransparentGray,    b::TransparentGray)    = _mapc(rettype(-, a, b), -, a, b)
 (*)(a::AbstractGray, b::AbstractGray) = a ⊙ b
-(^)(a::AbstractGray, b::Integer) = rettype(^, a, b)(gray(a)^convert(Int,b))
+(^)(a::AbstractGray, b::Integer) = rettype(^, a, b)(gray(a)^(b isa Bool ? b : convert(Int, b)))
 (^)(a::AbstractGray, b::Real)    = rettype(^, a, b)(gray(a)^b)
 (/)(a::AbstractGray, b::AbstractGray) = rettype(/, a, b)(_div(gray(a), gray(b)))
 (+)(a::AbstractGray, b::Number) = base_color_type(a)(gray(a)+b)
 (+)(a::AbstractGray{Bool}, b::Number) = arith_colorant_type(a){sumtype(Bool, typeof(b))}(gray(a) + b)
-(+)(a::AbstractGray{Bool}, b::Bool) = a + N0f8(b) # FIXME
+(+)(a::AbstractGray{Bool}, b::Bool) = a + sumtype(Bool, Bool)(b)
 (+)(a::Number, b::AbstractGray) = b+a
 (-)(a::AbstractGray, b::Number) = base_color_type(a)(gray(a)-b)
 (-)(a::Number, b::AbstractGray) = base_color_type(b)(a-gray(b))
 (-)(a::AbstractGray{Bool}, b::Number) = arith_colorant_type(a){sumtype(Bool, typeof(b))}(gray(a) - b)
 (-)(a::Number, b::AbstractGray{Bool}) = arith_colorant_type(b){sumtype(typeof(a), Bool)}(a - gray(b))
-(-)(a::AbstractGray{Bool}, b::Bool) = a - N0f8(b) # FIXME
-(-)(a::Bool, b::AbstractGray{Bool}) = N0f8(a) - b # FIXME
+(-)(a::AbstractGray{Bool}, b::Bool) = a - sumtype(Bool, Bool)(b)
+(-)(a::Bool, b::AbstractGray{Bool}) = sumtype(Bool, Bool)(a) - b
 
 (⋅)(x::C, y::C) where {C<:AbstractGray} = _mul(gray(x), gray(y))
 (⊗)(x::C, y::C) where {C<:AbstractGray} = x ⊙ y

@@ -123,22 +123,19 @@ operator or as a function which returns a real number based on the norm.
 For the latter, there are also variations in the definition of norm.
 
 In ColorVectorSpace v0.9 and later, `abs` is defined as a channel-wise operator.
-`abs2` returns a real-valued scalar. In previous versions of ColorVectorSpace,
+`abs2` returns a real-valued scalar. In earlier versions of ColorVectorSpace,
 for `g = Gray(0.3)`, ColorVectorSpace returned different values for `abs2(g)` and
-`abs2(RGB(g))`. This breaks the equivalence of `g` and `RGB(g)`.
-This behavior is retained, with a deprecation warning, starting with
-ColorVectorSpace 0.9.6.
+`abs2(RGB(g))`.
+In ColorVectorSpace v0.10 and later, `abs2` ensures the equivalence of `g` and `RGB(g)`.
+(cf. [`abs2` Transition Schedule](https://github.com/JuliaGraphics/ColorVectorSpace.jl/issues/208))
 
-We anticipate the following transition schedule:
+```julia
+julia> abs(RGB(-0.3, 0.4, 0.5)) # v0.9 or later
+RGB{Float64}(0.3, 0.4, 0.5)
 
-- Sept 21, 2021: release ColorVectorSpace 0.9.7 with both `abs2` and `Future.abs2`.
-  `abs2` will have a "quiet" deprecation warning (visible with `--depwarn=yes`
-  or when running `Pkg.test`)
-- May 19, 2022: make the deprecation warning "noisy" (cannot be turned off).
-  This is designed to catch user-level scripts that may need to update thresholds
-  or other constants.
-- *July 20, 2023: transition `abs2` to the new definition
-  and make `Future.abs2` give a "noisy" depwarn to revert to regular `abs2`.
-- *Dec 1, 2023: remove `Future.abs2`.
+julia> abs2(RGB(-0.3, 0.4, 0.5)) # v0.10 or later
+0.16666666666666666
 
-The line marked with `*` denotes a breaking release.
+julia> abs2(Gray(0.408N0f8)) # v0.10 or later
+0.165N0f8
+```

@@ -44,7 +44,8 @@ Note that `norm` has been designed to satisfy **equivalence** of grayscale and R
 Effectively, there's a division-by-3 in the `norm(::RGB)` case compared to the Euclidean interpretation of
 the RGB vector space.
 Equivalence is an important principle for the Colors ecosystem, and violations should be reported as likely bugs.
-One violation is `abs2`; see the section below for more detail.
+However, the equivalence cannot be straightforwardly extended to transparent colors (e.g., `GrayA` or `ARGB`).
+For this reason, some APIs, such as `abs2`, do not support transparent colors.
 
 ## Usage
 
@@ -53,8 +54,8 @@ using ColorTypes, ColorVectorSpace
 ```
 
 For the most part, that's it; just by loading `ColorVectorSpace`, most basic mathematical
-operations will "just work" on `AbstractRGB`, `AbstractGray`
-(`Color{T,1}`), `TransparentRGB`, and `TransparentGray` objects.
+operations will "just work" on `AbstractRGB`, `AbstractGray`,
+`TransparentRGB`, and `TransparentGray` objects.
 (See definitions for the latter inside of `ColorTypes`).
 
 However, there are some additional operations that you may need to distinguish carefully.

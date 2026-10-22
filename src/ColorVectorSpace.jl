@@ -468,7 +468,7 @@ function __init__()
             if exc.f === dot && length(argtypes) == 2
                 if any(C -> C <: Union{TransparentGray, TransparentRGB}, argtypes)
                     print(io, "\n`dot` (or `⋅`) for transparent colors is not supported ")
-                    print(io, "because the normalization is designed for opaque grays and RGBs.")
+                    print(io, "because its normalization is designed for opaque grays and RGBs.")
                     print(io, "\nYou can use `reducec(+, 0, mapc(float, a) ⊙ mapc(float, b))` ")
                     print(io, "to get the dot product without normalization.")
                 end
@@ -479,11 +479,11 @@ function __init__()
                 end
             elseif exc.f === abs2 && length(argtypes) == 1
                 C = argtypes[1]
-                if C <: MathTypes
-                    print(io, "\nIt is ambiguous whether `abs2(::$C)` should return a real number ")
-                    print(io, "or a color object.")
-                    print(io, "\nYou can use `_abs2(c) = mapreducec(v->float(v)^2, +, 0, c)` ")
-                    print(io, "to get the value compatible with ColorVectorSpace v0.8 or earlier.")
+                if C <: Union{TransparentGray, TransparentRGB}
+                    print(io, "\n`abs2` for transparent colors is not supported ")
+                    print(io, "because its normalization is designed for opaque grays and RGBs.")
+                    print(io, "\nYou can use `mapreducec(v->float(v)^2, +, 0, c)` ")
+                    print(io, "to get the unnormalized sum of squared channel values.")
                 end
             end
         end

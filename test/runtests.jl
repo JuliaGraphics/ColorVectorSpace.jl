@@ -286,50 +286,63 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
     end
 
     @testset "Unary operations with Gray" begin
-        ntested = 0
         for g in (Gray(0.4), Gray{N0f8}(0.4))
             @test @inferred(zero(g)) === typeof(g)(0)
             @test @inferred(oneunit(g)) === typeof(g)(1)
-            SFE = if isdefined(Base, :get_extension)
-                Base.get_extension(ColorVectorSpace, :SpecialFunctionsExt)
-            else
-                ColorVectorSpace.SpecialFunctionsExt
-            end
-            for mod in (
-                ColorVectorSpace,
-                SFE,
-                (; unaryops = (:trunc, :floor, :round, :ceil, :eps, :bswap)),
-            )
-                for op in mod.unaryops
-                    op ∈ (:frexp, :exponent, :modf, :logfactorial) && continue
-                    op === :~ && eltype(g) === Float64 && continue
-                    op === :significand && eltype(g) === N0f8 && continue
-                    try
-                        v = @eval $op(gray($g))  # if this fails, don't bother with the next test
-                        @test @eval($op($g)) === Gray(v)
+        end
+        SFE = if isdefined(Base, :get_extension)
+            Base.get_extension(ColorVectorSpace, :SpecialFunctionsExt)
+        else
+            ColorVectorSpace.SpecialFunctionsExt
+        end
+        mods = (
+            ColorVectorSpace,
+            SFE,
+            (; unaryops = (:trunc, :floor, :round, :ceil, :eps, :bswap)),
+        )
+        ntested = 0
+        @testset "$op" for mod in mods, op in mod.unaryops
+            op ∈ (:frexp, :exponent, :modf, :logfactorial) && continue # not supported
+
+            for T in (Float64, N0f8)
+                op === :~ && T === Float64 && continue
+                op === :significand && T === N0f8 && continue
+
+                if T === Float64 && op in (:acosh, :asec, :acsc, :acoth, :acscd, :asecd)
+                    g = Gray{T}(2.5)
+                else
+                    g = Gray{T}(0.4)
+                end
+                should_throw = true
+                try
+                    v = @eval $op(gray($g)) # if this fails, don't bother with the next test
+                    should_throw = false
+                    @test @eval($op($g)) === Gray(v)
+                    ntested += 1
+                catch ex
+                    @test ex isa Union{DomainError, ArgumentError, OverflowError}
+                    if should_throw
+                        @test_throws typeof(ex) @eval($op($g))
                         ntested += 1
-                    catch ex
-                        @test ex isa Union{DomainError,ArgumentError}
                     end
                 end
             end
         end
-        @test ntested > 130
+        @test ntested >= 152
         @test logabsgamma(Gray(0.2)) == (Gray(logabsgamma(0.2)[1]), 1)
-        for g in (Gray{N0f8}(0.4), Gray{N0f8}(0.6))
-            for op in (:trunc, :floor, :round, :ceil)
+
+        @testset "$op" for op in (:trunc, :floor, :round, :ceil)
+            for g in (Gray{N0f8}(0.4), Gray{N0f8}(0.6))
                 v = @eval $op(Bool, gray($g))
                 @test @eval($op(Bool, $g)) === v
             end
-        end
-        for g in (Gray(1.4), Gray(1.6))
-            for op in (:trunc, :floor, :round, :ceil)
+            for g in (Gray(1.4), Gray(1.6))
                 v = @eval $op(Int, gray($g))
                 @test @eval($op(Int, $g)) === v
             end
         end
-        for (g1, g2) in ((Gray(0.4), Gray(0.3)), (Gray(N0f8(0.4)), Gray(N0f8(0.3))))
-            for op in (:mod, :rem, :mod1)
+        @testset "$op" for op in (:mod, :rem, :mod1)
+            for (g1, g2) in ((Gray(0.4), Gray(0.3)), (Gray(N0f8(0.4)), Gray(N0f8(0.3))))
                 v = @eval $op(gray($g1), gray($g2))
                 @test @eval($op($g1, $g2)) === Gray(v)
             end

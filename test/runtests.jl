@@ -27,6 +27,14 @@ function test_colortype_approx_eq(a::Colorant, b::Colorant, astr, bstr)
     end
 end
 
+struct RGB111 <: AbstractRGB{Bool}
+    color::UInt8
+    RGB111(r::Bool, g::Bool, b::Bool) = new((r << 0x2) | (g << 0x1) | b)
+end
+ColorTypes.red(c::RGB111)   = (c.color >> 0x2) % Bool
+ColorTypes.green(c::RGB111) = (c.color >> 0x1) % Bool
+ColorTypes.blue(c::RGB111)  = c.color % Bool
+
 struct RatRGB <: AbstractRGB{Rational{Int}}
     r::Rational{Int}
     g::Rational{Int}
@@ -683,7 +691,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
         @test cf ⋅ cf   === (Float64(red(cf))^2 + Float64(green(cf))^2 + Float64(blue(cf))^2)/3
     end
 
-    @testset "arithmetic with Bool" begin # issue 148
+    @testset "Gray arithmetic with Bool" begin # issue 148
         cb = Gray{Bool}(1)
         @test @inferred(+cb) === cb
         @test @inferred(-cb) === cb # wrapped around
@@ -694,9 +702,9 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
             @test_broken @inferred(cb + true) === @inferred(true + cb) === Gray{Float32}(2)
             @test_broken @inferred(cb - true) === Gray{Float32}(0)
             @test_broken @inferred(true - cb) === Gray{Float32}(0)
-            @test @inferred(cb + false) === @inferred(false + cb) === Gray{N0f8}(1) # v0.9 behavior
-            @test @inferred(cb - true) === Gray{N0f8}(0) # v0.9 behavior
-            @test @inferred(true - cb) === Gray{N0f8}(0) # v0.9 behavior
+            @test @inferred(cb + false) === @inferred(false + cb) === Gray{N0f8}(1) # CVS v0.9-0.11 behavior
+            @test @inferred(cb - true) === Gray{N0f8}(0) # CVS v0.9-0.11 behavior
+            @test @inferred(true - cb) === Gray{N0f8}(0) # CVS v0.9-0.11 behavior
             @test @inferred(cb * true) === @inferred(true * cb) === Gray{Bool}(1)
             @test @inferred(cb / true) === Gray{Float32}(1)
             @test @inferred(cb / false) === Gray{Float32}(Inf32)
@@ -716,9 +724,9 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
             @test_broken @inferred(cb + 2) === @inferred(2 + cb) === Gray{Float32}(3)
             @test_broken @inferred(cb - 2) === Gray{Float32}(-1)
             @test_broken @inferred(2 - cb) === Gray{Float32}(1)
-            @test @inferred(cb + 0) === @inferred(0 + cb) === Gray{N0f8}(1) # v0.9 behavior
-            @test @inferred(cb - 1) === Gray{N0f8}(0) # v0.9 behavior
-            @test @inferred(2 - cb) === Gray{N0f8}(1) # v0.9 behavior
+            @test @inferred(cb + 0) === @inferred(0 + cb) === Gray{N0f8}(1) # CVS v0.9-0.11 behavior
+            @test @inferred(cb - 1) === Gray{N0f8}(0) # CVS v0.9-0.11 behavior
+            @test @inferred(2 - cb) === Gray{N0f8}(1) # CVS v0.9-0.11 behavior
             @test @inferred(cb * 2) === @inferred(2 * cb) === Gray{Float32}(2)
             @test @inferred(cb / 2) === Gray{Float32}(0.5)
             @test @inferred(2 / cb) === Gray{Float32}(2)
@@ -748,11 +756,11 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
             @test @inferred(cb * x) === @inferred(x * cb) === Gray{N0f8}(0.6)
             @test_broken @inferred(cb / x) === Gray{Float32}(1 / 0.6)
             @test_broken @inferred(x / cb) === Gray{Float32}(0.6)
-            @test @inferred(cb / oneunit(x)) === Gray{N0f8}(1) # v0.9 behavior
-            @test @inferred(x / cb) === Gray{N0f8}(0.6) # v0.9 behavior
+            @test @inferred(cb / oneunit(x)) === Gray{N0f8}(1) # CVS v0.9-0.11 behavior
+            @test @inferred(x / cb) === Gray{N0f8}(0.6) # CVS v0.9 behavior
             if x isa Gray
                 @test_broken @inferred(true / x) === Gray{Float32}(1 / 0.6)
-                @test @inferred(true / Gray(1)) === Gray{N0f8}(1.0) # v0.9 behavior
+                @test @inferred(true / Gray(1)) === Gray{N0f8}(1.0) # CVS v0.9-0.11 behavior
                 @test @inferred(x^true) === Gray{N0f8}(0.6)
                 @test @inferred(x^last([false])) === Gray{N0f8}(1.0)
             end
@@ -775,7 +783,7 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
             @test @inferred(c * true) === @inferred(true * c) === c
             if c === cu
                 @test_broken @inferred(c / true) === c / 1
-                @test @inferred(c / true) == c # v0.9 behavior
+                @test @inferred(c / true) == c # CVS v0.9-0.11 behavior
             else
                 @test @inferred(c / true) === c / 1
             end
@@ -784,6 +792,75 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
             @test @inferred(cb ⊗ c) === Gray(1) ⊗ c
             @test @inferred(c ⊗ cb) === c ⊗ Gray(1)
         end
+    end
+
+    @testset "RGB arithmetic with Bool" begin
+        cb = RGB111(1, 0, 1)
+        cb2 = RGB111(0, 1, 1)
+        @test @inferred(+cb) === cb
+        @test @inferred(-cb) === cb # wrapped around
+        # The current type-determination algorithm gives priority to parametric
+        # types, regardless of whether they can be represented by the original
+        # non-parametric type.
+        # There is still not sufficient consensus on whether to give preference
+        # to non-parametric types. (cf. Issue #169)
+        # Also, Support for `RGB{Bool}` in `ColorTypes` is not merely a feature
+        # extension but a breaking change.
+        # Therefore, within the current scope of compatibility, throwing a
+        # `TypeError` is the expected behavior.
+        @test_throws TypeError @inferred(one(cb) * cb) === cb
+        @test oneunit(cb) === RGB111(1, 1, 1)
+
+        @testset "vs. Gray{Bool}" begin
+            @test_throws TypeError cb + Gray(true)
+            @test_throws TypeError Gray(true) + cb
+            @test_throws TypeError cb - Gray(true)
+            @test_throws TypeError Gray(false) - cb
+        end
+
+        @testset "vs. Gray{Float32}" begin
+            x = Gray(0.5f0)
+            @test_skip @inferred(cb + x) === @inferred(x + cb) === RGB{Float32}(1.5, 0.5, 1.5)
+            @test_broken cb + x === RGB{Float32}(1.5, 0.5, 1.5)
+            @test_broken x + cb === RGB{Float32}(1.5, 0.5, 1.5)
+            @test_skip @inferred(cb - x) === RGB{Float32}(0.5, -0.5, 0.5)
+            @test_skip @inferred(x - cb) === RGB{Float32}(-0.5, 0.5, -0.5)
+            @test_broken cb - x === RGB{Float32}(0.5, -0.5, 0.5)
+            @test_broken x - cb === RGB{Float32}(-0.5, 0.5, -0.5)
+        end
+
+        @testset "vs. Gray{N0f8}" begin
+            x = Gray(0.6N0f8)
+            @test_skip @inferred(cb + x) === @inferred(x + cb) === RGB{N0f8}(0.596, 0.6, 0.596)
+            @test_broken cb + x === RGB{N0f8}(0.596, 0.6, 0.596)
+            @test_broken x + cb === RGB{N0f8}(0.596, 0.6, 0.596)
+            @test_skip @inferred(cb - x) === RGB{N0f8}(0.4, 0.404, 0.4)
+            @test_skip @inferred(x - cb) === RGB{N0f8}(0.604, 0.6, 0.604)
+            @test_broken cb - x === RGB{N0f8}(0.4, 0.404, 0.4)
+            @test_broken x - cb === RGB{N0f8}(0.604, 0.6, 0.604)
+        end
+
+        @testset "vs. Bool" begin
+            @test_throws TypeError cb * true
+            @test_throws TypeError true * cb
+            @test @inferred(cb / true) === RGB{Float32}(1, 0, 1)
+            @test @inferred(cb / false) === RGB{Float32}(Inf32, 0 / 0f0, Inf32)
+        end
+
+        @testset "vs. Int" begin
+            @test @inferred(cb * 2) === @inferred(2 * cb) === RGB{Float32}(2, 0, 2)
+            @test @inferred(cb / 2) === RGB{Float32}(0.5, 0, 0.5)
+        end
+
+        @testset "vs. N0f8" begin
+            @test @inferred(cb * 0.6N0f8) === @inferred(0.6N0f8 * cb) === RGB{N0f8}(0.6, 0, 0.6)
+            @test_broken @inferred(cb / 0.6N0f8) === RGB{Float32}(1 / 0.6, 0, 1 / 0.6)
+            @test @inferred(cb / 1N0f8) === RGB{N0f8}(1, 0, 1) # CVS v0.9-0.11 behavior
+        end
+
+        @test @inferred(cb ⊙ cb2) === RGB111(0, 0, 1)
+        @test @inferred(cb ⋅ cb2) === 1/3
+        @test Matrix(@inferred(cb ⊗ cb2)) == Bool[0 1 1; 0 0 0; 0 1 1]
     end
 
     @testset "Complement" begin

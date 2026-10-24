@@ -115,6 +115,18 @@ channels(c::TransparentGray) = (gray(c), alpha(c))
 channels(c::AbstractRGB)     = (red(c), green(c), blue(c))
 channels(c::TransparentRGB)  = (red(c), green(c), blue(c), alpha(c))
 
+_add(x::T, y::T) where {T} = x + y
+_add(x, y) = sumtype(typeof(x), typeof(y))(x + y)
+_add(x::FixedPoint, y::Integer) = sumtype(typeof(x), typeof(y))(x + oftype(x, y))
+_add(x::Integer, y::FixedPoint) = sumtype(typeof(x), typeof(y))(oftype(y, x) + y)
+_add(x::Bool, y::Bool) = x ⊻ y
+
+_sub(x::T, y::T) where {T} = x - y
+_sub(x, y) = sumtype(typeof(x), typeof(y))(x - y)
+_sub(x::FixedPoint, y::Integer) = sumtype(typeof(x), typeof(y))(x - oftype(x, y))
+_sub(x::Integer, y::FixedPoint) = sumtype(typeof(x), typeof(y))(oftype(y, x) - y)
+_sub(x::Bool, y::Bool) = x ⊻ y
+
 # TODO: Remove the specialized `_mul`s when dropping FixedPointNumbers v0.8 support
 if reinterpret(N0f16, 0xBADb)^2 === N0f16(float(reinterpret(N0f16, 0xBADb))^2)
     function _mul(x::N0f8, y::N0f8)
@@ -231,10 +243,10 @@ function (/)(c::C, f::AbstractFloat) where {C<:Union{AbstractRGB, TransparentRGB
     r = oneunit(divtype(eltype(c), typeof(f))) / f
     _mapc(rettype(/, c, f), v -> v * r, c)
 end
-(+)(a::AbstractRGB, b::AbstractRGB) = _mapc(rettype(+, a, b), +, a, b)
-(-)(a::AbstractRGB, b::AbstractRGB) = _mapc(rettype(-, a, b), -, a, b)
-(+)(a::TransparentRGB, b::TransparentRGB) = _mapc(rettype(+, a, b), +, a, b)
-(-)(a::TransparentRGB, b::TransparentRGB) = _mapc(rettype(-, a, b), -, a, b)
+(+)(a::AbstractRGB, b::AbstractRGB) = _mapc(rettype(+, a, b), _add, a, b)
+(-)(a::AbstractRGB, b::AbstractRGB) = _mapc(rettype(-, a, b), _sub, a, b)
+(+)(a::TransparentRGB, b::TransparentRGB) = _mapc(rettype(+, a, b), _add, a, b)
+(-)(a::TransparentRGB, b::TransparentRGB) = _mapc(rettype(-, a, b), _sub, a, b)
 
 # New multiplication operators
 function (⋅)(x::C, y::C) where C <: AbstractRGB  # ambiguity fix
@@ -273,26 +285,32 @@ middle(c::AbstractGray) = arith_colorant_type(c)(middle(gray(c)))
 middle(x::C, y::C) where {C<:AbstractGray} = arith_colorant_type(C)(middle(gray(x), gray(y)))
 
 (/)(n::Number, c::AbstractGray) = base_color_type(c)(_div(real(n), gray(c)))
-(+)(a::AbstractGray,       b::AbstractGray)       = _mapc(rettype(+, a, b), +, a, b)
-(+)(a::AbstractGray{Bool}, b::AbstractGray{Bool}) = _mapc(rettype(+, a, b), ⊻, a, b)
-(+)(a::TransparentGray,    b::TransparentGray)    = _mapc(rettype(+, a, b), +, a, b)
-(-)(a::AbstractGray,       b::AbstractGray)       = _mapc(rettype(-, a, b), -, a, b)
-(-)(a::AbstractGray{Bool}, b::AbstractGray{Bool}) = _mapc(rettype(-, a, b), ⊻, a, b)
-(-)(a::TransparentGray,    b::TransparentGray)    = _mapc(rettype(-, a, b), -, a, b)
+(+)(a::AbstractGray,    b::AbstractGray)    = _mapc(rettype(+, a, b), _add, a, b)
+(+)(a::TransparentGray, b::TransparentGray) = _mapc(rettype(+, a, b), _add, a, b)
+(-)(a::AbstractGray,    b::AbstractGray)    = _mapc(rettype(-, a, b), _sub, a, b)
+(-)(a::TransparentGray, b::TransparentGray) = _mapc(rettype(-, a, b), _sub, a, b)
 (*)(a::AbstractGray, b::AbstractGray) = a ⊙ b
 (^)(a::AbstractGray, b::Integer) = rettype(^, a, b)(gray(a)^(b isa Bool ? b : convert(Int, b)))
 (^)(a::AbstractGray, b::Real)    = rettype(^, a, b)(gray(a)^b)
 (/)(a::AbstractGray, b::AbstractGray) = rettype(/, a, b)(_div(gray(a), gray(b)))
-(+)(a::AbstractGray, b::Number) = base_color_type(a)(gray(a)+b)
-(+)(a::AbstractGray{Bool}, b::Number) = arith_colorant_type(a){sumtype(Bool, typeof(b))}(gray(a) + b)
-(+)(a::AbstractGray{Bool}, b::Bool) = a + sumtype(Bool, Bool)(b)
-(+)(a::Number, b::AbstractGray) = b+a
-(-)(a::AbstractGray, b::Number) = base_color_type(a)(gray(a)-b)
-(-)(a::Number, b::AbstractGray) = base_color_type(b)(a-gray(b))
-(-)(a::AbstractGray{Bool}, b::Number) = arith_colorant_type(a){sumtype(Bool, typeof(b))}(gray(a) - b)
-(-)(a::Number, b::AbstractGray{Bool}) = arith_colorant_type(b){sumtype(typeof(a), Bool)}(a - gray(b))
-(-)(a::AbstractGray{Bool}, b::Bool) = a - sumtype(Bool, Bool)(b)
-(-)(a::Bool, b::AbstractGray{Bool}) = sumtype(Bool, Bool)(a) - b
+# TODO: Drop support for FixedPointNumbers v0.8 and change the handling to
+#       follow the promotion rules for FixedPointNumbers v0.9.
+function (+)(a::AbstractGray, b::Number)
+    gray(a) isa Bool && b isa Bool && return base_color_type(a)(_add(gray(a), b) % sumtype(Bool, Bool))
+    return base_color_type(a)(_add(gray(a), b))
+end
+function (+)(a::Number, b::AbstractGray)
+    a isa Bool && gray(b) isa Bool && return base_color_type(b)(_add(a, gray(b)) % sumtype(Bool, Bool))
+    return base_color_type(b)(_add(a, gray(b)))
+end
+function (-)(a::AbstractGray, b::Number)
+    gray(a) isa Bool && b isa Bool && return base_color_type(a)(_sub(gray(a), b) % sumtype(Bool, Bool))
+    return base_color_type(a)(_sub(gray(a), b))
+end
+function (-)(a::Number, b::AbstractGray)
+    a isa Bool && gray(b) isa Bool && return base_color_type(b)(_sub(a, gray(b)) % sumtype(Bool, Bool))
+    return base_color_type(b)(_sub(a, gray(b)))
+end
 
 (⋅)(x::C, y::C) where {C<:AbstractGray} = _mul(gray(x), gray(y))
 (⊗)(x::C, y::C) where {C<:AbstractGray} = x ⊙ y

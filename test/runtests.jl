@@ -8,7 +8,7 @@ using ColorVectorSpace: _mul
 
 @testset "Aqua tests" begin
     Aqua.test_all(ColorVectorSpace, stale_deps = false, piracies = false)
-    Aqua.test_stale_deps(ColorVectorSpace, ignore = [:Requires])
+    Aqua.test_stale_deps(ColorVectorSpace, ignore = [:Requires, :Colors]) # FIXME
     Aqua.test_piracies(ColorVectorSpace,
         treat_as_own = [Colorant, Color, TransparentColor, AbstractGray, AbstractRGB, Gray])
 end

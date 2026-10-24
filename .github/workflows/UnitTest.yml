@@ -30,6 +30,9 @@ jobs:
           - os: ubuntu-latest
             julia-version: 'min'
             arch: x64
+          - os: ubuntu-latest # TODO: Delete this once v1.14 is released
+            julia-version: 'pre'
+            arch: x64
 
     steps:
       - uses: actions/checkout@v7
@@ -38,6 +41,11 @@ jobs:
           version: ${{ matrix.julia-version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v3
+      - run: | # FIXME
+          julia --project -e '
+            using Pkg
+            Pkg.add(PackageSpec(url = "https://github.com/kimikage/ColorTypes.jl", rev = "version-0.12.5"))
+            Pkg.add(PackageSpec(url = "https://github.com/kimikage/Colors.jl", rev = "version-0.13.4"))'
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v7

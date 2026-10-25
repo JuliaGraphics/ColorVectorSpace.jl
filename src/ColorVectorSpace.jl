@@ -457,8 +457,10 @@ function stdmult(op, itr; kwargs...)
     return isa(result, Union{Real,Colorant,RGBRGB}) ? _sqrt(result) : _sqrt.(result)
 end
 
-Base.length(r::StepRange{<:AbstractGray,<:AbstractGray}) = length(StepRange(gray(r.start), gray(r.step), gray(r.stop)))
-Base.length(r::StepRange{<:AbstractGray})                = length(StepRange(gray(r.start), r.step,       gray(r.stop)))
+function Base.length(r::StepRange{<:AbstractGray})
+    step = r.step isa AbstractGray ? gray(r.step) : r.step
+    return length(StepRange(gray(r.start), step, gray(r.stop)))
+end
 
 Base.abs2(c::Union{AbstractGray,AbstractRGB}) = c ⋅ c
 

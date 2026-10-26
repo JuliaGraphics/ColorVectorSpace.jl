@@ -349,6 +349,8 @@ ColorTypes.comp2(c::RGBA32) = alpha(c)
                 @test @eval($op(Int, $g)) === v
             end
         end
+        @test round(Gray(0.4), RoundNearest) === round(Gray(0.4))
+        @test round(Int8, Gray(0.4), RoundToZero) === trunc(Int8, Gray(0.4))
         @testset "$op" for op in (:mod, :rem, :mod1)
             for (g1, g2) in ((Gray(0.4), Gray(0.3)), (Gray(N0f8(0.4)), Gray(N0f8(0.3))))
                 v = @eval $op(gray($g1), gray($g2))

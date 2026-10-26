@@ -10,7 +10,7 @@ using FixedPointNumbers: ShorterThanInt
 import Base: ==, +, -, *, /, ^, <, ~
 import Base: abs, abs2, clamp, convert, copy, div, eps, float,
     length, mapreduce,
-    promote_op, promote_rule, zero, trunc, floor, round, ceil, bswap,
+    promote_op, promote_rule, zero, round, bswap,
     mod, mod1, rem, atan, hypot, max, min, real, typemin, typemax
 # More unaryops (mostly math functions)
 import Base:      conj, sin, cos, tan, sinh, cosh, tanh,
@@ -176,19 +176,32 @@ Base.reduce_empty(::typeof(Base.add_sum), ::Type{T}) where {T<:MathTypes{Bool}} 
 
 
 ## Rounding & mod
-for f in (:trunc, :floor, :round, :ceil, :eps, :bswap)
-    @eval $f(g::Gray{T}) where {T} = Gray{T}($f(gray(g)))
-end
-eps(::Type{Gray{T}}) where {T} = Gray(eps(T))
-
-for f in (:trunc, :floor, :round, :ceil)
-    @eval $f(::Type{T}, g::Gray) where {T<:Integer} = $f(T, gray(g))
+round(x::Gray{T}, r::RoundingMode) where {T} = Gray{T}(round(gray(x), r))
+round(::Type{Ti}, g::Gray, r::RoundingMode) where {Ti<:Integer} = round(Ti, gray(g), r)
+for (m, f) in ((:(:Nearest), :round),
+               (:(:ToZero), :trunc),
+               (:(:Up), :ceil),
+               (:(:Down), :floor))
+    @eval begin
+        if !hasmethod($f, Tuple{Gray}) || which($f, Tuple{Gray}).module !== Base
+            Base.$f(x::Gray) = round(x, RoundingMode{$m}())
+        end
+        if !hasmethod($f, Tuple{Type{<:Integer}, Gray}) ||
+            which($f, Tuple{Type{<:Integer}, Gray}).module !== Base
+            Base.$f(::Type{Ti}, x::Gray) where {Ti <: Integer} = round(Ti, x, RoundingMode{$m}())
+        end
+    end
 end
 
 for f in (:mod, :rem, :mod1)
     @eval $f(x::Gray, m::Gray) = Gray($f(gray(x), gray(m)))
     @eval $f(x::Gray, m::Real) = Gray($f(gray(x), m))
 end
+
+bswap(g::Gray{T}) where {T} = Gray{T}(bswap(gray(g)))
+
+eps(g::Gray{T}) where {T} = Gray{T}(eps(gray(g)))
+eps(::Type{Gray{T}}) where {T} = Gray(eps(T))
 
 dotc(x::T, y::T) where {T<:Real} = acc(x)*acc(y)
 dotc(x::Real, y::Real) = dotc(promote(x, y)...)

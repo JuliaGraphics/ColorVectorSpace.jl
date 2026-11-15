@@ -34,7 +34,8 @@ export RGBRGB, complement, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm
 MathTypes{T,C<:Union{AbstractGray{T},AbstractRGB{T}}} = Union{C,TransparentColor{C,T}}
 
 # To help type inference
-promote_rule(::Type{T}, ::Type{C}) where {T<:Real,C<:AbstractGray} = promote_type(T, eltype(C))
+# Empirically, specifying package-specific types first reduces the risk of invalidation.
+promote_rule(::Type{C}, ::Type{S}) where {T, C<:AbstractGray{T}, S<:Real} = promote_type(T, S)
 
 promote_leaf_eltypes(x::Union{AbstractArray{T},Tuple{T,Vararg{T}}}) where {T<:MathTypes} = eltype(T)
 

@@ -31,7 +31,7 @@ isdefined(Base, :get_extension) || using Requires
 
 export RGBRGB, complement, nan, dotc, dot, ⋅, hadamard, ⊙, tensor, ⊗, norm, varmult, stdmult
 
-MathTypes{T,C<:Union{AbstractGray{T},AbstractRGB{T}}} = Union{C,TransparentColor{C,T}}
+MathTypes{T,C<:Union{AbstractGray{T},AbstractRGB{T},CMY}} = Union{C,TransparentColor{C,T}}
 
 # To help type inference
 # Empirically, specifying package-specific types first reduces the risk of invalidation.
@@ -115,6 +115,7 @@ channels(c::AbstractGray)    = (gray(c),)
 channels(c::TransparentGray) = (gray(c), alpha(c))
 channels(c::AbstractRGB)     = (red(c), green(c), blue(c))
 channels(c::TransparentRGB)  = (red(c), green(c), blue(c), alpha(c))
+channels(c::CMY)  = (cyan(c), magenta(c), yellow(c))
 
 _add(x::T, y::T) where {T} = x + y
 _add(x, y) = sumtype(typeof(x), typeof(y))(x + y)
@@ -278,6 +279,14 @@ end
 # (rec601 luma), and normalizing
 dotc(x::T, y::T) where {T<:AbstractRGB} = 0.200f0 * acc(red(x))*acc(red(y)) + 0.771f0 * acc(green(x))*acc(green(y)) + 0.029f0 * acc(blue(x))*acc(blue(y))
 dotc(x::AbstractRGB, y::AbstractRGB) = dotc(promote(x, y)...)
+
+# CMY
+function (/)(c::CMY, f::AbstractFloat)
+    r = oneunit(divtype(eltype(c), typeof(f))) / f
+    _mapc(rettype(/, c, f), v -> v * r, c)
+end
+(+)(a::CMY, b::CMY) = _mapc(rettype(+, a, b), +, a, b)
+(-)(a::CMY, b::CMY) = _mapc(rettype(-, a, b), -, a, b)
 
 # Scalar Gray
 const unaryops = (:~, :conj, :abs,
